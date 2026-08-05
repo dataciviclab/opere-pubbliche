@@ -23,6 +23,7 @@ import argparse
 from pathlib import Path
 
 import duckdb
+from lab_connectors.gcs.paths import https_url
 
 REPO = Path(__file__).resolve().parent
 BUILD = REPO / "data" / "build"       # artefatti intermedi (fuori git)
@@ -35,19 +36,19 @@ OC_LOCALIZZAZIONE = str(REPO / "opencup/data/parquet/opencup_localizzazione.parq
 OC_FONTI = str(REPO / "opencup/data/parquet/opencup_fonti_copertura.parquet")
 
 # ---- Fonti Lab su GCS (bucket pubblici, lette direttamente) ----
-LAB_ANAC = "gs://dataciviclab-clean/anac_appalti_master/2026/anac_appalti_master_2026_clean.parquet"
-LAB_OPENCOESIONE = "gs://dataciviclab-clean/opencoesione_progetti/2026/opencoesione_progetti_2026_clean.parquet"
-LAB_PNRR = "gs://dataciviclab-clean/pnrr_progetti/2026/pnrr_progetti_2026_clean.parquet"
-LAB_PNRR_GARE = "gs://dataciviclab-clean/pnrr_gare/2026/pnrr_gare_2026_clean.parquet"
-LAB_PNRR_PAGAMENTI = "gs://dataciviclab-clean/pnrr_pagamenti/2026/pnrr_pagamenti_2026_clean.parquet"
+# Path contract canonico lab-connectors: pattern clean_parquet su bucket clean.
+# URL https (letti nativamente da DuckDB, senza httpfs) per stabilità.
+LAB_ANAC = https_url("clean", "clean_parquet", slug="anac_appalti_master", year=2026)
+LAB_OPENCOESIONE = https_url("clean", "clean_parquet", slug="opencoesione_progetti", year=2026)
+LAB_PNRR = https_url("clean", "clean_parquet", slug="pnrr_progetti", year=2026)
+LAB_PNRR_GARE = https_url("clean", "clean_parquet", slug="pnrr_gare", year=2026)
+LAB_PNRR_PAGAMENTI = https_url("clean", "clean_parquet", slug="pnrr_pagamenti", year=2026)
 
 SMALL_GARE_THRESHOLD = 5_000_000
 
 
 def _con() -> duckdb.DuckDBPyConnection:
-    con = duckdb.connect()
-    con.execute("INSTALL httpfs; LOAD httpfs;")
-    con.execute("SET memory_limit='3GB'")
+    con = duckdb.connect(config={"memory_limit": "3GB"})
     con.execute("SET threads=4")
     con.execute("SET temp_directory='/tmp/opencode/duckdb-spill'")
     return con
