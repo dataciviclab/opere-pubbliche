@@ -1,35 +1,41 @@
 # Opere Pubbliche Intelligence
 
-**Anagrafe universale dei progetti di investimento pubblico italiani (OpenCUP) + incrocio con i dataset del Lab.**
+**Dove vanno i soldi delle opere pubbliche in Italia? Chi li gestisce? Quanto arriva davvero a realizzazione?**
 
-Il repo produce la base dati di intelligence sulle opere pubbliche: l'anagrafe completa dei CUP
-(dal portale OpenCUP) come fondamento, arricchita con i sottoinsiemi del Lab (appalti ANAC, PNRR,
-coesione) via join su CUP.
+Ogni progetto di investimento pubblico in Italia ha un CUP (Codice Unico di Progetto).
+Questo repo raccoglie **tutti i CUP italiani** (anagrafe OpenCUP) e li incrocia con i dati
+del Lab (appalti ANAC, PNRR, coesione) per rispondere a quella domanda — con i numeri.
 
-## Scopo in una frase
+## Cosa contiene
 
-> Da un CUP a un profilo completo: anagrafe universale (OpenCUP) + contratti (ANAC) + stanziamento
-> (PNRR/coesione) + erogazione — per rispondere a "dove vanno i soldi delle opere pubbliche in Italia".
+| | |
+|---|---|
+| **CUP coperti** | 11,86 milioni (tutti i progetti di investimento pubblico, dal 1990 a oggi) |
+| **Costo totale** | €4.114 miliardi |
+| **PNRR** | €144 miliardi — il 3,5% del costo totale |
+| **Territorio** | fino al singolo comune (8.000+ comuni) |
+| **Aggiornamento** | mensile (fonte OpenCUP) |
 
-## Perché un repo separato (non DI)
+## Esempi di domande
 
-- **Fonte propria da ~15GB** (OpenCUP: Progetti 2,2GB + Localizzazione 205MB + Soggetti 2,9MB),
-  aggiornata mensilmente — non è un candidate standard, è una banca dati verticale.
-- **Consuma i clean del Lab via GCS** (contratto stabile) come arricchimento, non li modifica.
-- Pattern già usato dal Lab: `terzo-settore-intelligence`, `open-siope`.
+- **Quanto valgono le opere pubbliche nel mio comune?** E chi le gestisce?
+- **Il PNRR sta riequilibrando il divario Nord-Sud?** (dato: no — incide ~3,5% ovunque)
+- **Quali settori dipendono di più dai fondi PNRR?** (cultura 87%, trasporti 46%)
+- **Dove le opere vengono chiuse d'ufficio?** (segnale di mancata realizzazione — Calabria in testa)
+- **Quante opere arrivano davvero a gara e collaudo?** (dato: 6% con gara, 1,3% collaudate)
 
 ## Come funziona
 
 ```
-opencup/
-  scripts/
-    download_opencup.py     # scarica i 4 zip ufficiali (URL estratti dalla pagina)
-    convert_to_parquet.py   # estrai + converti in parquet zstd
-  data/                     # (fuori git) raw/ zip + parquet/ convertiti
-build/
-  join_map.yaml             # registro chiavi di join OpenCup ↔ Lab (con match rate)
-  build_unified.py          # incrocio CUP → data/unified_operas.parquet
-data/                       # (fuori git) deliverable: unified per CUP
+opencup/            fonte: download + convert in parquet (15GB, mensile)
+build/              pipeline: unified per CUP + 3 strati (fatti/aggregati) + regole join
+queries/            catalogo analitico: una domanda = un file SQL
+reports/            deliverable: data/reporting/panorama.md + .json
+```
+
+```bash
+make build          # pipeline completa (unified + 3 strati + view)
+make panorama       # deliverable: data/reporting/panorama.md + .json
 ```
 
 ## Dati (import 2026-08-05, aggiornamento mensile OpenCUP)
@@ -49,37 +55,29 @@ separato in layer per grano — le analisi territoriali non scansionano più le
 
 | Layer | File | Righe | Dim | Uso |
 |---|---|---|---|---|
-| 1. Fatti per CUP | `data/cup/cup_fatti.parquet` | 11.861.554 | 237 MB | join per singola opera (snello, senza descrizioni pesanti) |
+| 1. Fatti per CUP | `data/cup/cup_fatti.parquet` | 11.861.554 | 237 MB | join per singola opera (snello) |
 | 2. Aggregato comune | `data/aggregati/comune.parquet` | 31.573 | ~2 MB | analisi territoriale per comune |
 | 2. Aggregato regione×settore | `data/aggregati/regione_settore.parquet` | 231 | — | quadro macro |
 | 2. Aggregato settore | `data/aggregati/settore.parquet` | 11 | — | benchmark |
-| 3. Unified (derivato) | `data/unified_operas.parquet` | 11.861.554 | 794 MB | ricostruibile su richiesta (join dei layer) |
+| 3. Unified (derivato) | `data/unified_operas.parquet` | 11.861.554 | 794 MB | ricostruibile su richiesta |
 
 Le metriche ANAC degli aggregati usano le **colonne "piccole"** (gare sotto
 soglia €5M) e il `flag_ombrello` per non inquinare i totali con i CUP-programma
 (vedi `build/join-cup-anac-rules.md`). Il costo "pulito" esclude i CUP ombrello.
 
-## Build unified (grano: 1 riga per CUP)
+## Catalogo analitico (queries/)
 
-`build/build_unified.py` unisce OpenCup con i dataset Lab e produce `data/unified_operas.parquet`:
+Ogni domanda = un file SQL, leggibile con duckdb sugli aggregati (istantaneo):
 
-```
-anagrafe_*   da OpenCup progetti (stato, costo, finanziamento, classificazione)
-localizzazione_*  da OpenCup localizzazione (regione, provincia, comune)
-fonti_*      da OpenCup fonti copertura (n fonti, ha_fonte_*)
-pnrr_*       da pnrr_progetti (GCS): missione, fin_pnrr, stato avanzamento
-gare_*       da pnrr_gare (locale, candidate #800): n gare, importo aggiudicato
-anac_*       da anac_appalti_master (GCS): n gare, importo, collaudati
-coe_*        da opencoesione (GCS): ciclo, finanziamento, pagamenti
-```
-
-### Match rate chiavi (verificati 2026-08-05)
-
-| Dataset Lab | CUP unici | Match in OpenCup |
-|---|---|---|
-| pnrr_progetti | 285.992 | 99,9% |
-| opencoesione | 1.594.780 | 99,9% |
-| anac_cup | 1.538.176 | 97,5% |
+| Query | Domanda |
+|---|---|
+| `queries/01_panorama.sql` | Qual è il quadro macro delle opere pubbliche? |
+| `queries/02_divario_aree.sql` | Il PNRR sta riequilibrando il divario Nord/Sud? |
+| `queries/03_settori_pnrr.sql` | In quali settori il PNRR pesa di più? |
+| `queries/04_missioni_pnrr.sql` | Come si distribuisce il PNRR per missione? |
+| `queries/05_soggetti_titolari.sql` | Chi gestisce i soldi delle opere? |
+| `queries/06_stato_gestione.sql` | Dove le opere vengono chiuse d'ufficio? |
+| `queries/07_esecuzione_anac.sql` | Quante opere arrivano davvero a gara e collaudo? |
 
 ## Fonti
 
@@ -94,35 +92,6 @@ coe_*        da opencoesione (GCS): ciclo, finanziamento, pagamenti
 Download: `python opencup/scripts/download_opencup.py` (gli URL correnti sono estratti dalla
 pagina OpenCUP, robusto al cambio dei link Liferay). Serve venv attivo (lab-connectors).
 
-## Workflow
-
-```bash
-source .venv/bin/activate
-make build          # pipeline completa: unified + 3 strati + view
-make panorama       # deliverable: data/reporting/panorama.md + .json
-```
-
-Oppure, passo per passo:
-
-```bash
-python opencup/scripts/download_opencup.py            # scarica gli zip (skip se presenti)
-python opencup/scripts/convert_to_parquet.py          # zip → parquet (opencup/data/parquet/)
-python build/build_unified.py                         # unified per CUP → data/unified_operas.parquet
-python build/build_layers.py                          # 3 strati: cup_fatti + aggregati (comune/regione/settore)
-python build/materialize_views.py                     # view aggregate → data/views/
-python reports/panorama.py                            # report → data/reporting/
-```
-
-## Catalogo analitico (queries/)
-
-Ogni domanda = un file SQL, leggibile con duckdb sugli aggregati (istantaneo):
-
-| Query | Domanda |
-|---|---|
-| `queries/01_panorama.sql` | Qual è il quadro macro delle opere pubbliche? |
-| `queries/02_divario_aree.sql` | Il PNRR sta riequilibrando il divario Nord/Sud? |
-| `queries/03_settori_pnrr.sql` | In quali settori il PNRR pesa di più? |
-
 ## Deliverable (data/reporting/)
 
 `make panorama` serializza i numeri chiave:
@@ -132,4 +101,5 @@ Ogni domanda = un file SQL, leggibile con duckdb sugli aggregati (istantaneo):
 ## Stato
 
 - ✅ Import OpenCUP (4 parquet) + build unified (11,86M CUP, 100% copertura)
-- ⏭️ Prossimi: analisi sui dati unified, profilo per comune/regione, integrazione soggetti
+- ✅ 3 strati + catalogo 7 query + deliverable panorama
+- ⏭️ Prossimi: profilo per comune/regione completo, integrazione soggetti nel unified
