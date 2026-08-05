@@ -94,9 +94,14 @@ anac AS (
            COUNT(cig) AS anac_n_cig,
            SUM(importo_agg) AS anac_importo_aggiudicato,
            SUM(CASE WHEN flag_pnrr THEN 1 ELSE 0 END) AS anac_n_gare_pnrr,
-           COUNT(esito_collaudo) AS anac_n_collaudati
+           COUNT(esito_collaudo) AS anac_n_collaudati,
+           -- Colonne "piccole" (CIG sotto soglia): la somma totale è distorta
+           -- dai CUP-programma/ombrello (vedi build/join-cup-anac-rules.md).
+           COUNT(*) FILTER (WHERE importo_complessivo_gara < 5000000) AS anac_n_gare_piccole,
+           SUM(importo_agg) FILTER (WHERE importo_complessivo_gara < 5000000) AS anac_importo_gare_piccole
     FROM read_parquet('{LAB_ANAC}')
     WHERE cup IS NOT NULL
+      AND cup NOT IN ('ND', '000000000000000', '')
     GROUP BY cup
 ),
 coesione AS (
@@ -121,6 +126,14 @@ SELECT
     p.pnrr_fin_pnrr, p.pnrr_fin_totale,
     g.pnrr_n_gare, g.pnrr_n_gare_con_cig, g.pnrr_importo_aggiudicato,
     a.anac_n_gare, a.anac_n_cig, a.anac_importo_aggiudicato, a.anac_n_gare_pnrr, a.anac_n_collaudati,
+    a.anac_n_gare_piccole, a.anac_importo_gare_piccole,
+    -- CUP ombrello: molti CIG (>=50) E importo gare >> costo anagrafe.
+    -- Il solo n_cig alto non basta: il Terzo Valico (97 CIG, costo 4,7 mld)
+    -- è un'opera vera, non un contenitore. La distorsione nasce quando le
+    -- gare collegate superano di molto il costo dell'anagrafe.
+    CASE WHEN a.anac_n_cig >= 50
+              AND a.anac_importo_aggiudicato > b.costo_progetto * 3
+         THEN true ELSE false END AS flag_ombrello,
     c.coe_n_progetti, c.coe_ciclo, c.coe_finanz_tot_pubblico, c.coe_pagamenti
 FROM base b
 LEFT JOIN localizzazione l ON b.cup = l.cup
