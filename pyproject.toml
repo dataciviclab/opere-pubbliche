@@ -6,5 +6,5 @@ requires-python = ">=3.12"
 dependencies = [
     "duckdb>=1.0",
     # Infrastruttura condivisa Lab: path contract GCS, config DuckDB/GCS
-    "lab-connectors[duckdb]>=0.15.1",
+    "lab-connectors[duckdb] @ git+https://github.com/dataciviclab/lab-connectors.git",
 ]
