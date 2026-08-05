@@ -1,0 +1,10 @@
+[project]
+name = "opere-pubbliche-intelligence"
+version = "0.1.0"
+description = "Intelligence sulle opere pubbliche — metriche Lab per CUP, mart cup_fatti, aggregati territoriali"
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=1.0",
+    # Infrastruttura condivisa Lab: path contract GCS, config DuckDB/GCS
+    "lab-connectors[duckdb]>=0.15.1",
+]
