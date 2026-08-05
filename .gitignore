@@ -1,0 +1,12 @@
+# Dati raw OpenCUP (15GB) — mai in git
+opencup/data/raw/
+opencup/data/parquet/
+data/
+*.csv
+*.zip
+*.parquet
+
+# Python
+__pycache__/
+*.pyc
+.venv/
