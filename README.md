@@ -98,11 +98,36 @@ pagina OpenCUP, robusto al cambio dei link Liferay). Serve venv attivo (lab-conn
 
 ```bash
 source .venv/bin/activate
+make build          # pipeline completa: unified + 3 strati + view
+make panorama       # deliverable: data/reporting/panorama.md + .json
+```
+
+Oppure, passo per passo:
+
+```bash
 python opencup/scripts/download_opencup.py            # scarica gli zip (skip se presenti)
 python opencup/scripts/convert_to_parquet.py          # zip → parquet (opencup/data/parquet/)
 python build/build_unified.py                         # unified per CUP → data/unified_operas.parquet
 python build/build_layers.py                          # 3 strati: cup_fatti + aggregati (comune/regione/settore)
+python build/materialize_views.py                     # view aggregate → data/views/
+python reports/panorama.py                            # report → data/reporting/
 ```
+
+## Catalogo analitico (queries/)
+
+Ogni domanda = un file SQL, leggibile con duckdb sugli aggregati (istantaneo):
+
+| Query | Domanda |
+|---|---|
+| `queries/01_panorama.sql` | Qual è il quadro macro delle opere pubbliche? |
+| `queries/02_divario_aree.sql` | Il PNRR sta riequilibrando il divario Nord/Sud? |
+| `queries/03_settori_pnrr.sql` | In quali settori il PNRR pesa di più? |
+
+## Deliverable (data/reporting/)
+
+`make panorama` serializza i numeri chiave:
+- `panorama.md` — leggibile da umani
+- `panorama.json` — machine-readable per altri tool
 
 ## Stato
 
