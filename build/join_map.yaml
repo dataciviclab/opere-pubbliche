@@ -1,0 +1,68 @@
+# Join map — Opere Pubbliche Intelligence
+#
+# Registro delle chiavi di join tra OpenCup (anagrafe universale) e i dataset
+# del Lab. Tutti i join primari sono su CUP (15 char, formato identico).
+#
+# Match rate verificati (2026-08-05):
+#   pnrr_progetti       285.992 CUP -> 99,9%
+#   opencoesione        1.594.780   -> 99,9%
+#   anac_cup            1.538.176   -> 97,5%
+#
+# Chiavi secondarie (non primarie, per arricchimento):
+#   PIVA/CF soggetto titolare -> opencup_soggetti, bdap_anagrafe_enti
+#   CIG -> anac_appalti_master (via anac_cup CIG->CUP)
+
+sources:
+  opencup_progetti:
+    path: "opencup/data/parquet/opencup_progetti.parquet"
+    key: "CUP"
+    origin: local
+    description: "Anagrafe universale CUP (11,86M) — stato, costo, finanziamento, classificazione"
+
+  opencup_localizzazione:
+    path: "opencup/data/parquet/opencup_localizzazione.parquet"
+    key: "CUP"
+    origin: local
+    description: "CUP -> regione/provincia/comune (13,5M righe)"
+
+  opencup_soggetti:
+    path: "opencup/data/parquet/opencup_soggetti.parquet"
+    key: "PIVA_CODFISCALE_SOG_TITOLARE"
+    origin: local
+    description: "Anagrafiche soggetti titolari (54k)"
+
+  opencup_fonti_copertura:
+    path: "opencup/data/parquet/opencup_fonti_copertura.parquet"
+    key: "CUP"
+    origin: local
+    description: "CUP -> fonti di copertura finanziaria (22,7M righe)"
+
+  lab_pnrr_progetti:
+    path: "gs://dataciviclab-clean/pnrr_progetti/2026/pnrr_progetti_2026_clean.parquet"
+    key: "cup"
+    origin: gcs
+    description: "PNRR: missione, finanziamenti per fonte, stato avanzamento"
+
+  lab_pnrr_gare:
+    path: "/home/gabry/dev/dataciviclab-workspace/dataset-incubator/out/data/clean/pnrr_gare/2026/pnrr_gare_2026_clean.parquet"
+    key: "cup"
+    origin: local
+    description: "PNRR gare: CUP -> CIG, importi aggiudicazione (candidate #800, non ancora su GCS)"
+
+  lab_anac_cup:
+    path: "gs://dataciviclab-clean/anac_cup/2026/anac_cup_2026_clean.parquet"
+    key: "cup"
+    origin: gcs
+    description: "Bridge CIG->CUP (ANAC)"
+
+  lab_anac_appalti_master:
+    path: "gs://dataciviclab-clean/anac_appalti_master/2026/anac_appalti_master_2026_clean.parquet"
+    key: "cup"
+    origin: gcs
+    description: "ANAC: gare, aggiudicazioni, collaudo per CIG/CUP"
+
+  lab_opencoesione:
+    path: "gs://dataciviclab-clean/opencoesione_progetti/2026/opencoesione_progetti_2026_clean.parquet"
+    key: "CUP"
+    origin: gcs
+    description: "Coesione: ciclo, finanziamenti, stato"
