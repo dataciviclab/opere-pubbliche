@@ -26,48 +26,53 @@ del Lab (appalti ANAC, PNRR, coesione) per rispondere a quella domanda — con i
 
 ## Come funziona
 
+Flusso end-to-end in 4 fasi, un solo entry point (`pipeline.py`):
+
 ```
-opencup/            fonte: download + convert in parquet (15GB, mensile)
-build/              pipeline: unified per CUP + 3 strati (fatti/aggregati) + regole join
+opencup/            fonte: download + convert in parquet (mensile)
+pipeline.py         metrics → mart → aggregati
 queries/            catalogo analitico: una domanda = un file SQL
 reports/            deliverable: data/reporting/panorama.md + .json
 ```
 
 ```bash
-make build          # pipeline completa (unified + 3 strati + view)
+make all            # metrics + layers + panorama (pipeline completa)
+make layers         # rebuild mart + aggregati (comando quotidiano, veloce)
+make metrics        # ri-materializza metriche Lab da GCS (solo quando la fonte cambia)
 make panorama       # deliverable: data/reporting/panorama.md + .json
+python3 test_smoke.py   # verifica integrità mart + catalogo (antidoto alle regressioni)
 ```
 
-## Dati (import 2026-08-05, aggiornamento mensile OpenCUP)
+### Perché niente cache locale dei layer Lab
 
-| Parquet | Righe | Dim | Contenuto |
+I bucket GCS del Lab sono pubblici: i 5 dataset Lab (anac, opencoesione, pnrr×3)
+si leggono **direttamente da GCS** con DuckDB (httpfs + pushdown). Niente download
+locale: zero stale data (i file Lab si aggiornano — pnrr_pagamenti è stato aggiornato
+il 2026-08-05) e zero codice di cache da mantenere. Il costo di egress (~850 MB/mese)
+è trascurabile (~$0,10). L'unica eccezione: gli importi ANAC aggregati sono
+calcolati sulle colonne "piccole" per non inquinare i totali con i CUP-programma
+(vedi `build/join-cup-anac-rules.md`).
+
+## Layer dati
+
+Un solo mart + derivati leggeri (niente monolite):
+
+| Layer | File | Righe | Uso |
 |---|---|---|---|
-| `opencup_progetti` | 11.861.554 | 1,4 GB | anagrafe universale CUP (62 col, 0 duplicati) |
-| `opencup_localizzazione` | 13.504.100 | 199 MB | CUP → regione/provincia/comune |
-| `opencup_soggetti` | 54.208 | 3 MB | anagrafiche soggetti titolari |
-| `opencup_fonti_copertura` | 22.689.806 | 150 MB | CUP → fonti (statale/UE/regionale/privata) |
+| 1. Mart per CUP | `data/cup/cup_fatti.parquet` | 11.861.554 | unica fonte per tutte le domande del catalogo |
+| 2. Aggregato comune | `data/aggregati/comune.parquet` | 31.573 | analisi territoriale per comune |
+| 2. Aggregato regione×settore | `data/aggregati/regione_settore.parquet` | 231 | quadro macro |
+| 2. Aggregato settore | `data/aggregati/settore.parquet` | 11 | benchmark |
 
-## Layer dati (architettura a 3 strati)
-
-Il monolite `unified_operas` (11,86M righe, colonna descrizione ~1,6GB) è stato
-separato in layer per grano — le analisi territoriali non scansionano più le
-11,86M righe:
-
-| Layer | File | Righe | Dim | Uso |
-|---|---|---|---|---|
-| 1. Fatti per CUP | `data/cup/cup_fatti.parquet` | 11.861.554 | 237 MB | join per singola opera (snello) |
-| 2. Aggregato comune | `data/aggregati/comune.parquet` | 31.573 | ~2 MB | analisi territoriale per comune |
-| 2. Aggregato regione×settore | `data/aggregati/regione_settore.parquet` | 231 | — | quadro macro |
-| 2. Aggregato settore | `data/aggregati/settore.parquet` | 11 | — | benchmark |
-| 3. Unified (derivato) | `data/unified_operas.parquet` | 11.861.554 | 794 MB | ricostruibile su richiesta |
-
-Le metriche ANAC degli aggregati usano le **colonne "piccole"** (gare sotto
-soglia €5M) e il `flag_ombrello` per non inquinare i totali con i CUP-programma
-(vedi `build/join-cup-anac-rules.md`). Il costo "pulito" esclude i CUP ombrello.
+`cup_fatti` è 1 riga per CUP con: anagrafe (stato, costo, settore, soggetto titolare),
+localizzazione (regione/provincia/comune), metriche Lab (PNRR missione+finanziamenti,
+gare e pagamenti PNRR, gare ANAC con collaudo, coesione) e `flag_ombrello` per i
+CUP-programma. Il costo "pulito" degli aggregati esclude i CUP ombrello.
 
 ## Catalogo analitico (queries/)
 
-Ogni domanda = un file SQL, leggibile con duckdb sugli aggregati (istantaneo):
+Ogni domanda = un file SQL, leggibile con duckdb su `data/cup/cup_fatti.parquet`
+o sugli aggregati (istantaneo):
 
 | Query | Domanda |
 |---|---|
@@ -87,7 +92,7 @@ Ogni domanda = un file SQL, leggibile con duckdb sugli aggregati (istantaneo):
 | OpenCUP Localizzazione | `OpendataLocalizzazione.zip` | 248 MB | localizzazioni dei CUP |
 | OpenCUP Soggetti | `OpendataSoggetti.zip` | 3 MB | anagrafiche soggetti titolari/richiedenti |
 | OpenCUP Fonti copertura | `OpendataFontiCopertura.zip` | 161 MB | fonti di copertura |
-| Lab (consumo) | clean GCS + locale | — | anac, pnrr, opencoesione (via join_map.yaml) |
+| Lab (consumo, GCS pubblico) | clean parquet | — | anac, pnrr, opencoesione (via join_map.yaml) |
 
 Download: `python opencup/scripts/download_opencup.py` (gli URL correnti sono estratti dalla
 pagina OpenCUP, robusto al cambio dei link Liferay). Serve venv attivo (lab-connectors).
@@ -100,6 +105,7 @@ pagina OpenCUP, robusto al cambio dei link Liferay). Serve venv attivo (lab-conn
 
 ## Stato
 
-- ✅ Import OpenCUP (4 parquet) + build unified (11,86M CUP, 100% copertura)
-- ✅ 3 strati + catalogo 7 query + deliverable panorama
-- ⏭️ Prossimi: profilo per comune/regione completo, integrazione soggetti nel unified
+- ✅ Import OpenCUP (4 parquet) + mart cup_fatti (11,86M CUP, 100% copertura)
+- ✅ Un solo entry point (pipeline.py), aggregati leggeri, catalogo 7 query, panorama
+- ✅ Smoke test (test_smoke.py) — protegge mart + catalogo dalle regressioni
+- ⏭️ Prossimi: profilo per comune/regione completo, integrazione soggetti nel mart

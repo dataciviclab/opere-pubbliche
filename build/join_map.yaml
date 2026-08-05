@@ -44,12 +44,10 @@ sources:
     description: "PNRR: missione, finanziamenti per fonte, stato avanzamento"
 
   lab_pnrr_gare:
-    # Candidate pnrr_gare (dataset-incubator #800): parquet locale del run.
-    # Path relativo al workspace Lab: dataset-incubator/out/data/clean/pnrr_gare/2026/pnrr_gare_2026_clean.parquet
-    # (non ancora su GCS — da promuovere)
+    path: "gs://dataciviclab-clean/pnrr_gare/2026/pnrr_gare_2026_clean.parquet"
     key: "cup"
-    origin: local
-    description: "PNRR gare: CUP -> CIG, importi aggiudicazione (candidate #800, non ancora su GCS)"
+    origin: gcs
+    description: "PNRR gare: CUP -> CIG, importi aggiudicazione"
 
   lab_anac_cup:
     path: "gs://dataciviclab-clean/anac_cup/2026/anac_cup_2026_clean.parquet"
