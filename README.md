@@ -83,6 +83,20 @@ o sugli aggregati (istantaneo):
 | `queries/05_soggetti_titolari.sql` | Chi gestisce i soldi delle opere? |
 | `queries/06_stato_gestione.sql` | Dove le opere vengono chiuse d'ufficio? |
 | `queries/07_esecuzione_anac.sql` | Quante opere arrivano davvero a gara e collaudo? |
+| `queries/08_scheda_opera.sql` | Cosa sappiamo di un'opera? (1 CUP = 1 scheda — mart + SILOS) |
+
+### Schede opera (per il forum)
+
+`reports/scheda_opera.py` genera la scheda di un'opera dal catalogo 08, in
+`data/reporting/schede/{cup}.md` — pensata per il forum (1 discussione = 1 opera):
+
+```bash
+python3 reports/scheda_opera.py F81H92000000008   # Terzo Valico
+python3 reports/scheda_opera.py --all             # le 5 opere-icona del seed
+```
+
+Le 5 opere del seed (SILOS ∩ mart, con dati esecutivi): Terzo Valico, MO.S.E.,
+Pedemontana Lombarda, Palermo-Catania, Torino-Lione.
 
 ## Fonti
 
