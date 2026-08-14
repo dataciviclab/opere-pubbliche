@@ -28,6 +28,9 @@ SELECT
     f.anac_n_gare_pnrr AS n_gare_pnrr,
     f.anac_n_collaudati,
     f.anac_n_gare_piccole AS n_gare_piccole,
+    -- Affidamenti diretti (CIG prefisso B — smartCIG + affidamenti estesi)
+    f.anac_n_cig_b AS n_gare_affidamento_diretto,
+    f.anac_importo_cig_b AS importo_affidamento_diretto,
     f.flag_ombrello,
     -- Programmi
     f.pnrr_missione,

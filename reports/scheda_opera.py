@@ -79,6 +79,13 @@ def scheda(con: duckdb.DuckDBPyConnection, cup: str, nome: str | None = None) ->
     md += [f"| Gare PNRR | {fmt_int(r['n_gare_pnrr'])} |"]
     md += [f"| Collaudi | {fmt_int(r['anac_n_collaudati'])} |"]
     md += [f"| Gare sotto soglia €5M | {fmt_int(r['n_gare_piccole'])} |"]
+    md += [f"| Affidamenti diretti (CIG-B) | {fmt_int(r['n_gare_affidamento_diretto'])} |"]
+    if r.get('importo_affidamento_diretto'):
+        imp_b = r['importo_affidamento_diretto']
+        if imp_b >= 1e9:
+            md += [f"| Importo affidamenti diretti | €{fmt_mld(imp_b / 1e9)} mld |"]
+        else:
+            md += [f"| Importo affidamenti diretti | €{fmt_mld(imp_b / 1e6)} mio |"]
     md += [f"| CUP-programma (ombrello) | {'sì' if r['flag_ombrello'] else 'no'} |"]
 
     md += ["", "## Programmi", "", "| Dato | Valore |", "|---|---|"]
@@ -96,6 +103,7 @@ def scheda(con: duckdb.DuckDBPyConnection, cup: str, nome: str | None = None) ->
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("cups", nargs="*", help="CUP da schedulare")
+    ap.add_argument("--nome", help="nome leggibile dell'opera (per schede fuori seed)")
     ap.add_argument("--all", action="store_true", help="genera tutte le schede del seed")
     args = ap.parse_args()
 
@@ -114,6 +122,8 @@ def main() -> None:
         nome = None
         if args.all:
             nome = dict(SEED)[cup]
+        elif args.nome and len(cups) == 1:
+            nome = args.nome
         md = scheda(con, cup, nome)
         target = OUT / f"{cup}.md"
         target.write_text(md)

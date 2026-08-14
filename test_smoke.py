@@ -43,7 +43,8 @@ def main() -> None:
     cols = {r[0] for r in con.execute(f"DESCRIBE SELECT * FROM read_parquet('{CUP}')").fetchall()}
     required = {"cup", "regione", "comune", "soggetto_titolare", "stato_progetto",
                 "costo_progetto", "pnrr_missione", "pnrr_fin_pnrr", "anac_n_cig",
-                "anac_n_gare_piccole", "anac_n_collaudati", "flag_ombrello"}
+                "anac_n_gare_piccole", "anac_n_collaudati", "flag_ombrello",
+                "anac_n_cig_b", "anac_importo_cig_b"}
     missing = required - cols
     check(not missing, f"colonne contrattuali presenti (mancano: {sorted(missing) or 'nessuna'})")
     n_cup = con.execute(f"SELECT COUNT(*) FROM read_parquet('{CUP}')").fetchone()[0]
