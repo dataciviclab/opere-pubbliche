@@ -43,16 +43,6 @@ make panorama       # deliverable: data/reporting/panorama.md + .json
 python3 test_smoke.py   # verifica integrità mart + catalogo (antidoto alle regressioni)
 ```
 
-### Perché niente cache locale dei layer Lab
-
-I bucket GCS del Lab sono pubblici: i 5 dataset Lab (anac, opencoesione, pnrr×3)
-si leggono **direttamente da GCS** con DuckDB (httpfs + pushdown). Niente download
-locale: zero stale data (i file Lab si aggiornano — pnrr_pagamenti è stato aggiornato
-il 2026-08-05) e zero codice di cache da mantenere. Il costo di egress (~850 MB/mese)
-è trascurabile (~$0,10). L'unica eccezione: gli importi ANAC aggregati sono
-calcolati sulle colonne "piccole" per non inquinare i totali con i CUP-programma
-(vedi `build/join-cup-anac-rules.md`).
-
 ## Layer dati
 
 Un solo mart + derivati leggeri (niente monolite):
