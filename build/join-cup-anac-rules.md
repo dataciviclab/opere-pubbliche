@@ -1,8 +1,8 @@
 # Join CUP → ANAC: cardinalità e regole di pulizia
 
 Documenta il fenomeno della cardinalità CUP→CIG nel bridge ANAC e le regole
-da applicare nei join del unified. Scoperte 2026-08-05 studiando la catena
-end-to-end del PNRR.
+da applicare nei join del mart `cup_fatti`. Verificato 2026-08-05 sulla
+catena end-to-end del PNRR.
 
 ## Il problema
 
@@ -37,7 +37,7 @@ Esempi reali:
 
 ## Regola di pulizia (da applicare nel build)
 
-Per i join CUP→ANAC/PNRR-gare nel unified:
+Per i join CUP→ANAC/PNRR-gare nel mart:
 
 1. **Escludere i CUP placeholder**: `cup NOT IN ('ND', '000000000000000', '')`
 2. **Trattare i CUP con molti CIG come ombrello**: per il profilo CUP usare
@@ -52,10 +52,47 @@ Per i join CUP→ANAC/PNRR-gare nel unified:
 
 ## Implementazione
 
-- `build/build_unified.py`: aggiungere `flag_ombrello` (n_cig >= 50) e
+- `pipeline.py step_metrics`: aggiungere `flag_ombrello` (n_cig >= 50) e
   colonne `anac_n_gare_piccole` / `anac_importo_gare_piccole` (solo CIG sotto
   soglia) al posto della somma totale.
-- Le view che aggregano importi ANAC (`v_cup_rilevanti`, `v_analisi_gap`)
-  devono usare le colonne "piccole", non la somma totale.
-- Il CUP ombrello resta nel unified con `flag_ombrello=true` (non si elimina),
+- Le query che aggregano importi ANAC devono usare le colonne "piccole",
+  non la somma totale.
+- Il CUP ombrello resta nel mart con `flag_ombrello=true` (non si elimina),
   ma i suoi importi non si sommano agli aggregati territoriali.
+
+## SmartCIG (CIG prefisso B) — come si incastrano
+
+Verificato 2026-08-06 su `anac_appalti_master` (GCS). Una verifica precedente
+(2026-07-19) aveva dichiarato gli smartCIG "universo separato, ZERO match".
+**Era un falso negativo: il test confrontava i CIG-B con i
+dataset per-CIG (aggiudicazioni/aggiudicatari/partecipanti), non col master.**
+
+Nel master (compose di tutti i CIG) gli smartCIG **ci sono e sono linkabili**:
+
+| Dato | Valore |
+|---|---|
+| CIG con prefisso `B` nel master | 2.571.985 (42% dei 6,08M) |
+| ...con importo ≤ €40k (smartCIG "veri") | 1.712.821 (€23,6 mld) |
+| ...con **CUP valido** | 278.041 (16,2%) → il link alle opere |
+| ...con operatore (aggiudicatario) | 99,6% → si risale al vincitore |
+| ...con collaudo | 2,6% |
+
+**Lezione 1 — il link è il CUP, non il CIG**: i CIG-B non esistono nei dataset
+per-CIG (aggiudicazioni ecc.), ma il bridge CUP→CIG del master li copre. Il
+16,2% con CUP valido è la frazione collegabile alle opere.
+
+**Lezione 2 — CIG-B > €40k NON sono smartCIG**: sul Terzo Valico i CIG-B da
+€12M/€11M/€8M sono **affidamenti diretti di incarichi tecnici** (VPE/GC art.
+12-16, barriere antirumore) — le soglie del D.Lgs 36/2023 permettono
+affidamenti diretti estesi. Sul Ponte, €2,4M è il cloud IBM del CUP principale.
+Non sono errori del compose: sono la realtà degli affidamenti diretti delle
+grandi opere.
+
+**Lezione 3 — non sommare i CIG-B agli importi "piccoli"**: le colonne
+`anac_n_gare_piccole`/`anac_importo_gare_piccole` usano la soglia €5M e
+includono i CIG-B. Per distinguere gli affidamenti diretti servono colonne
+separate (`anac_n_cig_b` / `anac_importo_cig_b`), NON un filtro sulla somma.
+
+**Regola**: nei join per CUP contare i CIG-B separatamente dai CIG ordinari.
+L'indicatore utile è "quanti affidamenti diretti vs gare aperte per opera" —
+un proxy di trasparenza, non un importo da sommare ai totali di gara.

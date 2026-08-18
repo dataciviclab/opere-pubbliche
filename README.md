@@ -43,16 +43,6 @@ make panorama       # deliverable: data/reporting/panorama.md + .json
 python3 test_smoke.py   # verifica integrità mart + catalogo (antidoto alle regressioni)
 ```
 
-### Perché niente cache locale dei layer Lab
-
-I bucket GCS del Lab sono pubblici: i 5 dataset Lab (anac, opencoesione, pnrr×3)
-si leggono **direttamente da GCS** con DuckDB (httpfs + pushdown). Niente download
-locale: zero stale data (i file Lab si aggiornano — pnrr_pagamenti è stato aggiornato
-il 2026-08-05) e zero codice di cache da mantenere. Il costo di egress (~850 MB/mese)
-è trascurabile (~$0,10). L'unica eccezione: gli importi ANAC aggregati sono
-calcolati sulle colonne "piccole" per non inquinare i totali con i CUP-programma
-(vedi `build/join-cup-anac-rules.md`).
-
 ## Layer dati
 
 Un solo mart + derivati leggeri (niente monolite):
@@ -83,6 +73,20 @@ o sugli aggregati (istantaneo):
 | `queries/05_soggetti_titolari.sql` | Chi gestisce i soldi delle opere? |
 | `queries/06_stato_gestione.sql` | Dove le opere vengono chiuse d'ufficio? |
 | `queries/07_esecuzione_anac.sql` | Quante opere arrivano davvero a gara e collaudo? |
+| `queries/08_scheda_opera.sql` | Cosa sappiamo di un'opera? (1 CUP = 1 scheda — mart + SILOS) |
+
+### Schede opera (per il forum)
+
+`reports/scheda_opera.py` genera la scheda di un'opera dal catalogo 08, in
+`data/reporting/schede/{cup}.md` — pensata per il forum (1 discussione = 1 opera):
+
+```bash
+python3 reports/scheda_opera.py F81H92000000008   # Terzo Valico
+python3 reports/scheda_opera.py --all             # le 5 opere-icona del seed
+```
+
+Le 5 opere del seed (SILOS ∩ mart, con dati esecutivi): Terzo Valico, MO.S.E.,
+Pedemontana Lombarda, Palermo-Catania, Torino-Lione.
 
 ## Fonti
 
@@ -92,7 +96,7 @@ o sugli aggregati (istantaneo):
 | OpenCUP Localizzazione | `OpendataLocalizzazione.zip` | 248 MB | localizzazioni dei CUP |
 | OpenCUP Soggetti | `OpendataSoggetti.zip` | 3 MB | anagrafiche soggetti titolari/richiedenti |
 | OpenCUP Fonti copertura | `OpendataFontiCopertura.zip` | 161 MB | fonti di copertura |
-| Lab (consumo, GCS pubblico) | clean parquet | — | anac, pnrr, opencoesione (via join_map.yaml) |
+| Lab (consumo, GCS pubblico) | clean parquet | — | anac, pnrr, opencoesione |
 
 Download: `python opencup/scripts/download_opencup.py` (gli URL correnti sono estratti dalla
 pagina OpenCUP, robusto al cambio dei link Liferay). Serve venv attivo (lab-connectors).

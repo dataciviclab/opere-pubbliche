@@ -78,7 +78,9 @@ def step_metrics(con: duckdb.DuckDBPyConnection) -> None:
                    SUM(CASE WHEN flag_pnrr THEN 1 ELSE 0 END) AS anac_n_gare_pnrr,
                    COUNT(esito_collaudo) AS anac_n_collaudati,
                    COUNT(*) FILTER (WHERE importo_complessivo_gara < {SMALL_GARE_THRESHOLD}) AS anac_n_gare_piccole,
-                   SUM(importo_agg) FILTER (WHERE importo_complessivo_gara < {SMALL_GARE_THRESHOLD}) AS anac_importo_gare_piccole
+                   SUM(importo_agg) FILTER (WHERE importo_complessivo_gara < {SMALL_GARE_THRESHOLD}) AS anac_importo_gare_piccole,
+                   COUNT(*) FILTER (WHERE LEFT(cig,1) = 'B') AS anac_n_cig_b,
+                   SUM(importo_agg) FILTER (WHERE LEFT(cig,1) = 'B') AS anac_importo_cig_b
             FROM read_parquet('{LAB_ANAC}')
             WHERE cup IS NOT NULL AND cup NOT IN ('ND','000000000000000','') GROUP BY cup""",
         "m_coesione": f"""
@@ -134,6 +136,7 @@ def step_layers(con: duckdb.DuckDBPyConnection) -> None:
                    a.anac_n_gare, a.anac_n_cig, a.anac_importo_aggiudicato,
                    a.anac_n_gare_pnrr, a.anac_n_collaudati,
                    a.anac_n_gare_piccole, a.anac_importo_gare_piccole,
+                   a.anac_n_cig_b, a.anac_importo_cig_b,
                    CASE WHEN a.anac_n_cig >= 50 AND a.anac_importo_aggiudicato > TRY_CAST(REPLACE(b."COSTO_PROGETTO", ',', '.') AS DOUBLE) * 3
                         THEN true ELSE false END AS flag_ombrello,
                    c.coe_n_progetti, c.coe_finanz_tot_pubblico, c.coe_pagamenti

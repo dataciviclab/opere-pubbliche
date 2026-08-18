@@ -43,7 +43,8 @@ def main() -> None:
     cols = {r[0] for r in con.execute(f"DESCRIBE SELECT * FROM read_parquet('{CUP}')").fetchall()}
     required = {"cup", "regione", "comune", "soggetto_titolare", "stato_progetto",
                 "costo_progetto", "pnrr_missione", "pnrr_fin_pnrr", "anac_n_cig",
-                "anac_n_gare_piccole", "anac_n_collaudati", "flag_ombrello"}
+                "anac_n_gare_piccole", "anac_n_collaudati", "flag_ombrello",
+                "anac_n_cig_b", "anac_importo_cig_b"}
     missing = required - cols
     check(not missing, f"colonne contrattuali presenti (mancano: {sorted(missing) or 'nessuna'})")
     n_cup = con.execute(f"SELECT COUNT(*) FROM read_parquet('{CUP}')").fetchone()[0]
@@ -72,6 +73,20 @@ def main() -> None:
     check(totali[1] >= 600_000, f"CUP con gara ANAC >= 600k (reale: {totali[1]:,})")
     n_comuni = con.execute(f"SELECT COUNT(*) FROM read_parquet('{AGG / 'comune.parquet'}')").fetchone()[0]
     check(n_comuni >= 8_000, f"n_comuni >= 8000 (reale: {n_comuni:,})")
+
+    # ---- 4. Scheda opera (query 08) — il contratto del forum ----
+    print("\n4. scheda opera (queries/08_scheda_opera.sql)")
+    q08 = (REPO / "queries" / "08_scheda_opera.sql")
+    check(q08.exists(), "08_scheda_opera.sql presente nel catalogo")
+    if q08.exists():
+        sql = q08.read_text().replace("{cup}", "F81H92000000008")
+        row = con.execute(sql).fetchone()
+        check(row is not None, "scheda Terzo Valico risolve (F81H92000000008)")
+        if row is not None:
+            cols = [c[0] for c in con.description]
+            d = dict(zip(cols, row))
+            check(d.get("pnrr_missione") is not None, "scheda contiene missione PNRR (M3)")
+            check((d.get("n_gare_anac") or 0) > 50, f"scheda contiene gare ANAC (reale: {d.get('n_gare_anac')})")
     con.close()
     print("\nOK — smoke test superato")
 
