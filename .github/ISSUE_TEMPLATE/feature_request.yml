@@ -1,0 +1,35 @@
+name: Nuova domanda / analisi
+description: Proponi una nuova domanda civica o una query del catalogo
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Prima di aprire una issue tecnica, valuta le **Discussions** del repo:
+        le domande civiche e le interpretazioni maturano lì e diventano issue quando
+        richiedono lavoro concreto.
+  - type: textarea
+    id: domanda
+    attributes:
+      label: La domanda
+      description: In una frase, cosa vuoi capire dai dati delle opere pubbliche?
+    validations:
+      required: true
+  - type: textarea
+    id: analisi
+    attributes:
+      label: Come la si potrebbe calcolare
+      description: Su quali colonne (cup_fatti / aggregati) si basa la nuova metrica?
+    validations:
+      required: false
+  - type: dropdown
+    id: artefatto
+    attributes:
+      label: Dove dovrebbe vivere il risultato
+      options:
+        - Nuova query in queries/
+        - Aggregato nuovo in data/aggregati/
+        - Rapporto / deliverable
+        - Solo discussione (non trasformare in issue)
+    validations:
+      required: true

@@ -1,10 +1,22 @@
 [project]
 name = "opere-pubbliche-intelligence"
 version = "0.1.0"
-description = "Intelligence sulle opere pubbliche — metriche Lab per CUP, mart cup_fatti, aggregati territoriali"
+description = "Dove vanno i soldi delle opere pubbliche in Italia - 11,8 milioni di CUP interrogabili"
 requires-python = ">=3.12"
 dependencies = [
     "duckdb>=1.0",
     # Infrastruttura condivisa Lab: path contract GCS, config DuckDB/GCS
     "lab-connectors[duckdb] @ git+https://github.com/dataciviclab/lab-connectors.git",
+]
+
+[project.urls]
+Homepage = "https://github.com/dataciviclab/opere-pubbliche-intelligence"
+Repository = "https://github.com/dataciviclab/opere-pubbliche-intelligence"
+Issues = "https://github.com/dataciviclab/opere-pubbliche-intelligence/issues"
+Discussions = "https://github.com/dataciviclab/opere-pubbliche-intelligence/discussions"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
 ]

@@ -1,0 +1,42 @@
+name: Bug report
+description: Segnala un bug nella pipeline, nelle query o nei dati
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Grazie per la segnalazione. Descrivi il problema: se riguarda dati, query,
+        pipeline o documentazione. Per domande civiche usa le Discussions.
+  - type: textarea
+    id: cosa
+    attributes:
+      label: Cosa non funziona
+      description: Descrizione sintetica del problema.
+    validations:
+      required: true
+  - type: textarea
+    id: atteso
+    attributes:
+      label: Comportamento atteso
+      description: Cosa ti aspettavi che accadesse?
+    validations:
+      required: false
+  - type: dropdown
+    id: ambito
+    attributes:
+      label: Ambito
+      options:
+        - Pipeline (pipeline.py / Makefile)
+        - Query del catalogo (queries/)
+        - Dati / mart (cup_fatti, aggregati)
+        - Documentazione (docs/, README)
+        - Altro
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log o comando (opzionale)
+      description: Incolla l'output/errore se utile.
+    validations:
+      required: false

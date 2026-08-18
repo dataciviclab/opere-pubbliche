@@ -2,6 +2,9 @@
 
 **Dove vanno i soldi delle opere pubbliche in Italia? Chi li gestisce? Quanto arriva davvero a realizzazione?**
 
+[![CI](https://github.com/dataciviclab/opere-pubbliche-intelligence/actions/workflows/test.yml/badge.svg)](https://github.com/dataciviclab/opere-pubbliche-intelligence/actions/workflows/test.yml)
+[![Licenza: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 Ogni progetto di investimento pubblico in Italia ha un CUP (Codice Unico di Progetto).
 Questo repo raccoglie **tutti i CUP italiani** (anagrafe OpenCUP) e li incrocia con i dati
 del Lab (appalti ANAC, PNRR, coesione) per rispondere a quella domanda — con i numeri.
@@ -21,6 +24,29 @@ del Lab (appalti ANAC, PNRR, coesione) per rispondere a quella domanda — con i
 - **Quanto valgono le opere pubbliche nel mio comune?** E chi le gestisce?
 - **Il PNRR sta riequilibrando il divario Nord-Sud?** (dato: no — incide ~3,5% ovunque)
 - **Quali settori dipendono di più dai fondi PNRR?** (cultura 87%, trasporti 46%)
+## Come accedere ai dati
+
+Tre modi, tutti sui layer già pronti in `data/`:
+
+**1. DuckDB sul mart** — 1 riga per CUP, con anagrafe + localizzazione + metriche Lab:
+
+```bash
+pip install "duckdb>=1.0"
+python3 -c "import duckdb; print(duckdb.sql(\"SELECT regione, COUNT(*) n_cup FROM read_parquet('data/cup/cup_fatti.parquet') GROUP BY 1 ORDER BY 2 DESC LIMIT 5\"))"
+```
+
+**2. Query SQL catalogate** — una domanda = un file in `queries/` (leggibili su mart e aggregati):
+
+```bash
+python3 -c "import duckdb; [duckdb.sql(open(f).read()) for f in ['queries/01_panorama.sql']]"
+```
+
+**3. Panorama pre-calcolato** — i numeri chiave già serializzati:
+
+- `data/reporting/panorama.md` — leggibile da umani
+- `data/reporting/panorama.json` — machine-readable per altri tool
+
+## Come funziona
 - **Dove le opere vengono chiuse d'ufficio?** (segnale di mancata realizzazione — Calabria in testa)
 - **Quante opere arrivano davvero a gara e collaudo?** (dato: 6% con gara, 1,3% collaudate)
 
@@ -40,7 +66,7 @@ make all            # metrics + layers + panorama (pipeline completa)
 make layers         # rebuild mart + aggregati (comando quotidiano, veloce)
 make metrics        # ri-materializza metriche Lab da GCS (solo quando la fonte cambia)
 make panorama       # deliverable: data/reporting/panorama.md + .json
-python3 test_smoke.py   # verifica integrità mart + catalogo (antidoto alle regressioni)
+make test           # smoke test di integrità (antidoto alle regressioni)
 ```
 
 ## Layer dati
@@ -107,9 +133,30 @@ pagina OpenCUP, robusto al cambio dei link Liferay). Serve venv attivo (lab-conn
 - `panorama.md` — leggibile da umani
 - `panorama.json` — machine-readable per altri tool
 
+## Limiti e trasparenza
+
+- I numeri dipendono dalle fonti ufficiali: OpenCUP si aggiorna mensilmente.
+- Una parte dei CUP ANAC è "ombrello" o placeholder: le regole di pulizia sono
+  esplicite in [`docs/decisions.md`](docs/decisions.md) e pre-assegnate nel mart
+  (`flag_ombrello`, colonne "piccole").
+- Il dato pulito del Lab si legge da GCS direttamente (nessuna cache locale): zero stale data.
+- Le scelte progettuali sono documentate in [`docs/`](docs/README.md).
+
+## Partecipa
+
+Hai un'idea, un'interpretazione o vuoi una nuova domanda?
+
+- **Discussions** → domande civiche, interpretazioni, proposte di metriche
+- **Issues** → bug, problemi tecnici, miglioramenti della pipeline
+- **Contributing** → [`docs/contributing.md`](docs/contributing.md)
+
 ## Stato
 
 - ✅ Import OpenCUP (4 parquet) + mart cup_fatti (11,86M CUP, 100% copertura)
-- ✅ Un solo entry point (pipeline.py), aggregati leggeri, catalogo 7 query, panorama
+- ✅ Un solo entry point (pipeline.py), aggregati leggeri, catalogo 8 query, panorama
 - ✅ Smoke test (test_smoke.py) — protegge mart + catalogo dalle regressioni
 - ⏭️ Prossimi: profilo per comune/regione completo, integrazione soggetti nel mart
+
+## Licenza
+
+MIT — vedi [LICENSE](LICENSE). Dati di fonte pubblica; la licenza vale per codice e documentazione del repo.

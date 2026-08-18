@@ -12,7 +12,6 @@ formato compatto, niente fronzoli. Output: data/reporting/schede/{cup}.md
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 import duckdb
@@ -96,7 +95,7 @@ def scheda(con: duckdb.DuckDBPyConnection, cup: str, nome: str | None = None) ->
 
     md += ["", "## Localizzazione", ""]
     md += [f"- {fmt_loc(r['comune'], r['provincia'], r['regione'])}"]
-    md += ["", f"_Fonte: OpenCUP + Lab (ANAC/PNRR/coesione) + SILOS. Generata da `reports/scheda_opera.py`._"]
+    md += ["", "_Fonte: OpenCUP + Lab (ANAC/PNRR/coesione) + SILOS. Generata da `reports/scheda_opera.py`._"]
     return "\n".join(md)
 
 

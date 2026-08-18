@@ -109,7 +109,8 @@ def step_metrics(con: duckdb.DuckDBPyConnection) -> None:
 def step_layers(con: duckdb.DuckDBPyConnection) -> None:
     OUT_CUP.mkdir(parents=True, exist_ok=True)
     OUT_AGG.mkdir(parents=True, exist_ok=True)
-    B = lambda n: f"read_parquet('{BUILD / n}.parquet')"  # noqa: E731
+    def B(n: str) -> str:
+        return f"read_parquet('{BUILD / n}.parquet')"
 
     # cup_fatti: anagrafe snella + metriche Lab + localizzazione + soggetto
     # (unico mart: tutte le domande del catalogo queries/ leggono da qui)

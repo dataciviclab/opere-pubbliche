@@ -1,0 +1,75 @@
+name: test
+on:
+  pull_request:
+    paths:
+      - "**.py"
+      - "**.sql"
+      - "*.toml"
+      - "Makefile"
+  push:
+    branches: [main]
+    paths:
+      - "**.py"
+      - "**.sql"
+      - "*.toml"
+      - "Makefile"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          # Il repo non è un package installabile (script standalone in root):
+          # installiamo le dipendenze runtime + tooling dev direttamente.
+          pip install "duckdb>=1.0" pytest ruff
+
+      - name: Byte-compile check
+        run: |
+          python -m compileall -q pipeline.py reports/panorama.py opencup/scripts test_smoke.py conftest.py tests
+
+      - name: Contract tests
+        run: |
+          python -m pytest tests/ -m contract
+
+      - name: Lint (ruff)
+        run: |
+          ruff check pipeline.py reports/ opencup/scripts test_smoke.py conftest.py tests
+
+      - name: No data artifacts tracked
+        run: |
+          test -z "$(git ls-files | grep -E '\.(parquet|csv|zip)$' || true)" || (echo "artefatti dati committati" && exit 1)
+
+  # Lo smoke test sull'intero flusso richiede OpenCUP (15GB) + GCS:
+  # lo eseguiamo solo su richiesta manuale, non su ogni PR.
+  smoke:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: pip install "duckdb>=1.0" "lab-connectors[duckdb] @ git+https://github.com/dataciviclab/lab-connectors.git"
+      - name: Download + convert OpenCUP
+        run: |
+          mkdir -p opencup/data/raw
+          python opencup/scripts/download_opencup.py --out opencup/data/raw
+          python opencup/scripts/convert_to_parquet.py
+      - name: Run pipeline
+        run: make all
+      - name: Smoke test
+        run: make test
