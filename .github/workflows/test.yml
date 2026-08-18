@@ -32,7 +32,9 @@ jobs:
       - name: Install deps
         run: |
           pip install --upgrade pip
-          pip install -e ".[dev]"
+          # Il repo non è un package installabile (script standalone in root):
+          # installiamo le dipendenze runtime + tooling dev direttamente.
+          pip install "duckdb>=1.0" pytest ruff
 
       - name: Byte-compile check
         run: |
@@ -61,7 +63,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install deps
-        run: pip install -e ".[dev]"
+        run: pip install "duckdb>=1.0" "lab-connectors[duckdb] @ git+https://github.com/dataciviclab/lab-connectors.git"
       - name: Download + convert OpenCUP
         run: |
           mkdir -p opencup/data/raw
