@@ -46,7 +46,7 @@ jobs:
 
       - name: Lint (ruff)
         run: |
-          ruff check pipeline.py reports/panorama.py opencup/scripts test_smoke.py conftest.py tests
+          ruff check pipeline.py reports/ opencup/scripts test_smoke.py conftest.py tests
 
       - name: No data artifacts tracked
         run: |
