@@ -1,9 +1,15 @@
 # Opere Pubbliche Intelligence — Makefile
 # Un solo entry point: pipeline.py. Niente cache: i layer Lab si leggono da GCS.
-.PHONY: all metrics layers panorama test check clean help
+.PHONY: all opencup metrics layers panorama test check clean help
 
 ## Pipeline completa: metrics (fonti Lab) + layers (mart + aggregati)
 all: metrics layers panorama
+
+## Fonte di dominio: scarica OpenCUP (4 zip) e converte in parquet
+## (opencup/data/raw → opencup/data/parquet). Mensile, solo quando la fonte cambia.
+opencup:
+	python3 opencup/scripts/download_opencup.py --out opencup/data/raw
+	python3 opencup/scripts/convert_to_parquet.py --raw opencup/data/raw --out opencup/data/parquet
 
 ## Step 1: materializza le metriche per CUP dai layer Lab (GCS direct-read).
 ## Da usare quando la fonte Lab è cambiata (refresh mensile) o per rebuild deliberato.

@@ -62,11 +62,12 @@ reports/            deliverable: data/reporting/panorama.md + .json
 ```
 
 ```bash
-make all            # metrics + layers + panorama (pipeline completa)
-make layers         # rebuild mart + aggregati (comando quotidiano, veloce)
-make metrics        # ri-materializza metriche Lab da GCS (solo quando la fonte cambia)
-make panorama       # deliverable: data/reporting/panorama.md + .json
-make test           # smoke test di integrità (antidoto alle regressioni)
+make opencup       # scarica OpenCUP (mensile) e converte in parquet
+make all           # metrics + layers + panorama (pipeline completa)
+make layers        # mart + aggregati (comando quotidiano, veloce)
+make metrics       # ri-materializza metriche Lab da GCS (solo quando la fonte cambia)
+make panorama      # deliverable: data/reporting/panorama.md + .json
+make test          # smoke test di integrità (antidoto alle regressioni)
 ```
 
 ## Layer dati
