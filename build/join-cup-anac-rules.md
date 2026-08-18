@@ -1,8 +1,8 @@
 # Join CUP → ANAC: cardinalità e regole di pulizia
 
 Documenta il fenomeno della cardinalità CUP→CIG nel bridge ANAC e le regole
-da applicare nei join del unified. Scoperte 2026-08-05 studiando la catena
-end-to-end del PNRR.
+da applicare nei join del mart `cup_fatti`. Verificato 2026-08-05 sulla
+catena end-to-end del PNRR.
 
 ## Il problema
 
@@ -37,7 +37,7 @@ Esempi reali:
 
 ## Regola di pulizia (da applicare nel build)
 
-Per i join CUP→ANAC/PNRR-gare nel unified:
+Per i join CUP→ANAC/PNRR-gare nel mart:
 
 1. **Escludere i CUP placeholder**: `cup NOT IN ('ND', '000000000000000', '')`
 2. **Trattare i CUP con molti CIG come ombrello**: per il profilo CUP usare
@@ -62,9 +62,9 @@ Per i join CUP→ANAC/PNRR-gare nel unified:
 
 ## SmartCIG (CIG prefisso B) — come si incastrano
 
-Verificato 2026-08-06 su `anac_appalti_master` (GCS). Storico: una sessione del
-2026-07-19 li aveva dichiarati "universo separato, ZERO match" (nota in
-`_local/notes`). **Era un falso negativo: il test confrontava i CIG-B con i
+Verificato 2026-08-06 su `anac_appalti_master` (GCS). Una verifica precedente
+(2026-07-19) aveva dichiarato gli smartCIG "universo separato, ZERO match".
+**Era un falso negativo: il test confrontava i CIG-B con i
 dataset per-CIG (aggiudicazioni/aggiudicatari/partecipanti), non col master.**
 
 Nel master (compose di tutti i CIG) gli smartCIG **ci sono e sono linkabili**:

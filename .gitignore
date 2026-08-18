@@ -6,6 +6,9 @@ data/
 *.zip
 *.parquet
 
+# Note e materiali interni del Lab — mai in git
+_local/
+
 # Python
 __pycache__/
 *.pyc

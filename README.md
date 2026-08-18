@@ -106,7 +106,7 @@ Pedemontana Lombarda, Palermo-Catania, Torino-Lione.
 | OpenCUP Localizzazione | `OpendataLocalizzazione.zip` | 248 MB | localizzazioni dei CUP |
 | OpenCUP Soggetti | `OpendataSoggetti.zip` | 3 MB | anagrafiche soggetti titolari/richiedenti |
 | OpenCUP Fonti copertura | `OpendataFontiCopertura.zip` | 161 MB | fonti di copertura |
-| Lab (consumo, GCS pubblico) | clean parquet | — | anac, pnrr, opencoesione (via join_map.yaml) |
+| Lab (consumo, GCS pubblico) | clean parquet | — | anac, pnrr, opencoesione |
 
 Download: `python opencup/scripts/download_opencup.py` (gli URL correnti sono estratti dalla
 pagina OpenCUP, robusto al cambio dei link Liferay). Serve venv attivo (lab-connectors).
