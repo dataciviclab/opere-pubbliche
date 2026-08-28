@@ -27,7 +27,7 @@ OUT_AGG = REPO / "data" / "aggregati"
 
 
 def _con() -> duckdb.DuckDBPyConnection:
-    con = duckdb.connect(config={"memory_limit": "8GB"})
+    con = duckdb.connect(config={"memory_limit": "6GB"})
     con.execute("SET threads=2")
     con.execute("SET preserve_insertion_order=false")
     con.execute("SET temp_directory='/tmp/opencode/duckdb-spill'")

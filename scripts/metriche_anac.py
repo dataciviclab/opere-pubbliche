@@ -35,7 +35,7 @@ SMALL_GARE_THRESHOLD = 5_000_000
 
 def _con() -> duckdb.DuckDBPyConnection:
     con = duckdb.connect(config={"memory_limit": "3GB"})
-    con.execute("SET threads=4")
+    con.execute("SET threads=2")
     con.execute("SET temp_directory='/tmp/opencode/duckdb-spill'")
     return con
 
