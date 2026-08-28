@@ -50,11 +50,19 @@ leggibili.
 Pipeline toolkit + scripts custom:
 
 ```
-FONTE (OpenCUP locale, refresh mensile)
-  └─> toolkit run (fetch → clean → mart OpenCUP)           [make run-all]
-       └─> scripts/metriche_anac.py (metriche Lab da GCS)  [make metrics]
-            └─> scripts/cup_fatti.py (mart + aggregati)     [make layers]
-                 └─> queries catalogo + panorama            [make panorama]
+FETCH (make opencup)
+  └─> fetch_progetti.py: Liferay → ZIP → 7 CSV → parquet
+
+TOOLKIT (make run-all)
+  ├─> datasets/opencup-progetti: local_file → clean → mart
+  ├─> support/opencup-localizzazione: http_file + unzip_first_csv → clean → mart
+  ├─> support/opencup-fonti: http_file + unzip_first_csv → clean → mart
+  └─> support/opencup-soggetti: http_file + unzip_first_csv → clean → mart
+
+ANALISI (make metrics → layers → panorama)
+  ├─> scripts/metriche_anac.py: metriche Lab da GCS → data/build/
+  ├─> scripts/cup_fatti.py: join OpenCUP + metriche → cup_fatti + aggregati
+  └─> scripts/panorama.py: deliverable → data/reporting/
 ```
 
 Per dettagli di esecuzione vedi [contributing.md](contributing.md) e il README principale.

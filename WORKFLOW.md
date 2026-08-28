@@ -17,9 +17,9 @@ Come contribuire in modo semplice a Opere Pubbliche Intelligence.
 
 ## Flusso tecnico minimo
 
-1. valida la struttura con `python -m pytest tests/` (contract, non richiede i layer)
-2. esegui `make check` (byte-compile)
-3. se hai i layer: `make all` e `make test` (smoke end-to-end)
+1. installa: `pip install -e ".[dev]"` (o `pip install -e ".[pipeline]"` per toolkit)
+2. valida: `python -m pytest tests/` (contract, non richiede i layer)
+3. se hai i dati: `make all` (toolkit + metrics + layers + panorama + test)
 4. registra le scelte in `docs/decisions.md` e lo schema in `docs/data_dictionary.md` quando cambiano
 
 ## Confine tecnico

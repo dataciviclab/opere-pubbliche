@@ -40,3 +40,16 @@ Registriamo le scelte che cambiano il significato dei dati o il contratto verso 
 
 - **decisione:** gli aggregati per comune escludono `'', 'TUTTI', 'TUTTI I COMUNI', 'AMBITO NAZIONALE'`.
 - **motivo:** le voci non riferite a un comune reale inquinano i totali geografici.
+
+## D-006 — datasets/ vs support/ per i 4 dataset OpenCUP
+
+- **decisione:** OpenCUP Progetti sta in `datasets/` (main dataset), Localizzazione/Fonti/Soggetti
+  stanno in `support/` (lookup tables). I support usano `type: http_file` + `extractor: unzip_first_csv`;
+  Progetti usa `type: local_file` con parquet prodotto da `fetch_progetti.py`.
+- **motivo:** Progetti è il dataset principale (11.94M CUP, 7 shard CSV da 14GB). I lookup sono
+  tabelle di riferimento per join, non dataset analitici indipendenti. Il pattern è coerente
+  con il project-template del Lab (`support/` per anagrafiche).
+- **impatto:** `make run-all` processa sia `datasets/` che `support/`. `make run-seeds` processa
+  solo `support/`. Il download di Progetti resta manuale (`make opencup`) per via della dimensione.
+- **alternative:** tutto in `datasets/` (scartato: non rispetta il ruolo dei lookup);
+  tutto in `support/` (scartato: Progetti non è un lookup).

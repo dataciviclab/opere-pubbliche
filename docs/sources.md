@@ -13,9 +13,9 @@ Consiglio (DIPE). Tutti i progetti di investimento pubblico in Italia.
 | `OpendataFontiCopertura.zip` | fonti di copertura finanziaria | 161 MB |
 
 - **Portale:** https://www.opencup.gov.it/portale/web/opencup/accesso-agli-open-data
-- **Download + convert:** `make opencup` (o manualmente con i due script
-  `opencup/scripts/download_opencup.py` + `convert_to_parquet.py`). Gli URL correnti
-  sono estratti dalla pagina (robusto al cambio dei link Liferay `?t=...`)
+- **Download:** `make opencup` (esegue `opencup/scripts/fetch_progetti.py` per Progetti;
+  gli altri 3 dataset vengono scaricati direttamente da toolkit via HTTP).
+  Gli URL sono estratti dalla pagina Liferay (robusto al cambio dei link `?t=...`).
 - **Frequenza:** aggiornamento mensile (download locale in `opencup/data/`, fuori git)
 - **Formato origine:** CSV delimitato `;`, encoding UTF-8, header
 
