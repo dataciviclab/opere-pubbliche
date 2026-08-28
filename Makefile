@@ -1,45 +1,89 @@
 # Opere Pubbliche Intelligence — Makefile
-# Un solo entry point: pipeline.py. Niente cache: i layer Lab si leggono da GCS.
-.PHONY: all opencup metrics layers panorama test check clean help
+# Pipeline toolkit (dataset.yml) + script analitici.
+# Convenzione Lab: toolkit gestisce fetch→clean→mart; gli script
+# Python gestiscono metriche, cup_fatti, panorama.
+TOOLKIT = toolkit
 
-## Pipeline completa: metrics (fonti Lab) + layers (mart + aggregati)
-all: metrics layers panorama
+# --- Dataset del repo -------------------------------------------------------
+DATASETS := $(shell find datasets support -name dataset.yml 2>/dev/null | sort)
 
-## Fonte di dominio: scarica OpenCUP (4 zip) e converte in parquet
-## (opencup/data/raw → opencup/data/parquet). Mensile, solo quando la fonte cambia.
+# --- Fetch OpenCUP (manuale, mensile) ---------------------------------------
+# Progetti: script fetch+extract+merge → out/raw (per toolkit)
+# Localizzazione/Fonti: toolkit scarica nativamente da HTTP
+
+.PHONY: opencup
 opencup:
-	python3 opencup/scripts/download_opencup.py --out opencup/data/raw
-	python3 opencup/scripts/convert_to_parquet.py --raw opencup/data/raw --out opencup/data/parquet
+	python3 opencup/scripts/fetch_progetti.py
 
-## Step 1: materializza le metriche per CUP dai layer Lab (GCS direct-read).
-## Da usare quando la fonte Lab è cambiata (refresh mensile) o per rebuild deliberato.
-metrics:
-	python3 pipeline.py --step metrics
+# --- Run toolkit ------------------------------------------------------------
 
-## Step 2: cup_fatti (unico mart) + aggregati comune/regione/settore. Comando quotidiano.
-layers:
-	python3 pipeline.py --step layers
+.PHONY: run
+run:
+	$(TOOLKIT) run --batch batch.txt
 
-## Deliverable: panorama in data/reporting/ (md + json)
-panorama:
-	mkdir -p data/reporting
-	python3 reports/panorama.py
+.PHONY: run-seeds
+run-seeds:
+	@find support -name dataset.yml | sort > batch.txt; \
+	$(TOOLKIT) run --batch batch.txt
 
-## Test di integrità (antidoto alle regressioni). Richiede i layer già prodotti.
-test:
-	python3 test_smoke.py
+.PHONY: run-all
+run-all:
+	@find datasets support -name dataset.yml | sort > batch.txt; \
+	TOOLKIT_ALLOW_SCRIPT_SOURCE=1 $(TOOLKIT) run --batch batch.txt
 
-## Validazione statica: byte-compile dei .py + esecuzione delle query del catalogo
+# --- Validazione config ------------------------------------------------------
+
+.PHONY: check
 check:
-	@python3 -m compileall -q pipeline.py reports/panorama.py opencup/scripts test_smoke.py
-	@echo "✅ byte-compile ok"
-	@test -f data/cup/cup_fatti.parquet && python3 test_smoke.py || echo "layer non presenti — esegui prima: make layers"
-	@echo "✅ check completato"
+	@for f in $(DATASETS); do \
+		echo "→ $$f"; \
+		$(TOOLKIT) run preflight --config "$$f" > /dev/null 2>&1 || exit 1; \
+	done
+	@echo "✅ All configs valid"
 
-## Helptext
+# --- Script analitici (leggono da GCS + out/) -------------------------------
+
+.PHONY: metrics
+metrics:
+	python3 scripts/metriche_anac.py
+
+.PHONY: layers panorama
+layers:
+	python3 scripts/cup_fatti.py
+
+panorama:
+	python3 scripts/panorama.py
+
+# --- Pipeline completa: toolkit + analitici + test ----------------------------
+
+.PHONY: all
+all: run-all metrics layers panorama test
+
+# --- Test --------------------------------------------------------------------
+
+.PHONY: test
+test:
+	python3 -m pytest tests/ -v
+
+# --- Registry ----------------------------------------------------------------
+
+.PHONY: registry registry-write
+registry:
+	$(TOOLKIT) registry build --prefix opere_pubbliche_intelligence --flat
+
+registry-write:
+	$(TOOLKIT) registry build --prefix opere_pubbliche_intelligence --flat --write
+
+# --- Pulizia -----------------------------------------------------------------
+
+.PHONY: clean
+clean:
+	rm -rf out/data/_runs out/data/probe out/data/raw out/data/clean out/data/mart
+
+.PHONY: clean-data
+clean-data:
+	rm -rf data/build data/cup data/aggregati data/reporting
+
+.PHONY: help
 help:
 	@grep -E '^[a-zA-Z_-]+:' Makefile | sort
-
-## Pulizia degli artefatti (fuori git)
-clean:
-	rm -rf data/build data/cup data/aggregati data/reporting

@@ -1,0 +1,53 @@
+root: "../../out"
+schema_version: 1
+
+dataset:
+  name: "opencup_localizzazione"
+  source_id: "opencup"
+  tags: [opere, opencup, localizzazione, territorio, support]
+  category: support
+  description: "Localizzazione territoriale dei CUP — regione, provincia, comune."
+  years: [2026]
+  time_coverage:
+    start_year: 1990
+    end_year: 2026
+
+raw:
+  output_policy: overwrite
+  extractor:
+    type: "unzip_first_csv"
+  sources:
+    - name: "opencup_localizzazione"
+      type: "http_file"
+      args:
+        url: "https://www.opencup.gov.it/portale/documents/21195/299152/OpendataLocalizzazione.zip/ac230d13-23a0-5929-8778-d34c21c9a7a4"
+      primary: true
+
+clean:
+  sql: "sql/clean.sql"
+  read:
+    source: auto
+    mode: latest
+    delim: ";"
+    encoding: utf-8
+    header: true
+  required_columns: [cup, regione, provincia, comune, codice_comune]
+  validate:
+    not_null: [cup]
+    min_rows: 10000000
+
+mart:
+  tables:
+    - name: "mart_localizzazione"
+      sql: "sql/mart_localizzazione.sql"
+  required_tables: ["mart_localizzazione"]
+  validate:
+    table_rules:
+      mart_localizzazione:
+        not_null: [cup]
+
+validation:
+  fail_on_error: true
+
+output:
+  artifacts: "minimal"
