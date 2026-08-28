@@ -47,13 +47,14 @@ leggibili.
 
 ## Metodo
 
-Pipeline unica end-to-end (un solo entry point `pipeline.py`):
+Pipeline toolkit + scripts custom:
 
 ```
 FONTE (OpenCUP locale, refresh mensile)
-  └─> metrics (metriche Lab lette da GCS, direct-read)   [make metrics]
-       └─> mart cup_fatti (1 riga per CUP) + aggregati    [make layers]
-            └─> queries catalogo + reporting/panorama    [make panorama]
+  └─> toolkit run (fetch → clean → mart OpenCUP)           [make run-all]
+       └─> scripts/metriche_anac.py (metriche Lab da GCS)  [make metrics]
+            └─> scripts/cup_fatti.py (mart + aggregati)     [make layers]
+                 └─> queries catalogo + panorama            [make panorama]
 ```
 
 Per dettagli di esecuzione vedi [contributing.md](contributing.md) e il README principale.

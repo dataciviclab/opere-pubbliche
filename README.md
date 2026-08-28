@@ -52,11 +52,11 @@ python3 -c "import duckdb; [duckdb.sql(open(f).read()) for f in ['queries/01_pan
 
 ## Come funziona
 
-Flusso end-to-end in 4 fasi, un solo entry point (`pipeline.py`):
+Flusso end-to-end in 4 fasi:
 
 ```
 opencup/            fonte: download + convert in parquet (mensile)
-pipeline.py         metrics → mart → aggregati
+scripts/            metrics (metriche Lab da GCS) → mart cup_fatti → aggregati
 queries/            catalogo analitico: una domanda = un file SQL
 reports/            deliverable: data/reporting/panorama.md + .json
 ```
@@ -104,12 +104,12 @@ o sugli aggregati (istantaneo):
 
 ### Schede opera (per il forum)
 
-`reports/scheda_opera.py` genera la scheda di un'opera dal catalogo 08, in
+`scripts/scheda_opera.py` genera la scheda di un'opera dal catalogo 08, in
 `data/reporting/schede/{cup}.md` — pensata per il forum (1 discussione = 1 opera):
 
 ```bash
-python3 reports/scheda_opera.py F81H92000000008   # Terzo Valico
-python3 reports/scheda_opera.py --all             # le 5 opere-icona del seed
+python3 scripts/scheda_opera.py F81H92000000008   # Terzo Valico
+python3 scripts/scheda_opera.py --all             # le 5 opere-icona del seed
 ```
 
 Le 5 opere del seed (SILOS ∩ mart, con dati esecutivi): Terzo Valico, MO.S.E.,
@@ -154,7 +154,7 @@ Hai un'idea, un'interpretazione o vuoi una nuova domanda?
 ## Stato
 
 - ✅ Import OpenCUP (4 parquet) + mart cup_fatti (11,86M CUP, 100% copertura)
-- ✅ Un solo entry point (pipeline.py), aggregati leggeri, catalogo 8 query, panorama
+- ✅ Toolkit pipeline (dataset.yml) + scripts custom, aggregati leggeri, catalogo 8 query, panorama
 - ✅ Smoke test (test_smoke.py) — protegge mart + catalogo dalle regressioni
 - ⏭️ Prossimi: profilo per comune/regione completo, integrazione soggetti nel mart
 

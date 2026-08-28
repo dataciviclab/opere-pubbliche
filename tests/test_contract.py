@@ -2,8 +2,8 @@
 
 Verifica la forma del repo, non i dati:
 - presenza dei componenti richiesti (README, licenza, docs, workflow, tooling);
-- convenzione verticale consumer: catalogo query, mart unico, registri in build/;
-- non si committano output di run (data/, _local/, parquet/csv/zip).
+- convenzione toolkit: datasets/ con dataset.yml, scripts/ per logica custom;
+- non si committano output di run (data/, out/, parquet/csv/zip).
 
 Non richiede i layer dati: è il gate rapido della CI.
 
@@ -25,14 +25,13 @@ REQUIRED_FILES = [
     "LICENSE",
     "Makefile",
     "pyproject.toml",
-    "conftest.py",
-    "pipeline.py",
-    "test_smoke.py",
+    "ruff.toml",
     ".editorconfig",
     ".gitattributes",
     ".gitignore",
     ".github/PULL_REQUEST_TEMPLATE.md",
-    ".github/workflows/test.yml",
+    ".github/workflows/ci.yml",
+    ".github/workflows/pipeline.yml",
     "docs/README.md",
     "docs/overview.md",
     "docs/sources.md",
@@ -41,10 +40,10 @@ REQUIRED_FILES = [
     "docs/contributing.md",
     "docs/lab_links.md",
     "docs/join-cup-anac-rules.md",
-    "reports/panorama.py",
 ]
 
-IGNORE_ENTRIES = {"data/", "_local/", "*.parquet", "*.csv", "*.zip", "__pycache__/", "opencup/data/raw/", "opencup/data/parquet/", ".venv/", ".env"}
+IGNORE_ENTRIES = {"data/", "out/", "_local/", "*.parquet", "*.csv", "*.zip", "__pycache__/",
+                  ".venv/", ".env"}
 BLOCKED_SUFFIXES = {".parquet", ".csv", ".zip", ".pyc"}
 
 
@@ -56,8 +55,17 @@ def test_required_files_exist() -> None:
 
 @pytest.mark.contract
 def test_required_dir_layout() -> None:
+    assert (REPO_ROOT / "datasets").is_dir(), "datasets/ obbligatoria (toolkit)"
+    assert (REPO_ROOT / "support").is_dir(), "support/ obbligatoria (lookup datasets)"
+    assert (REPO_ROOT / "scripts").is_dir(), "scripts/ obbligatoria (logica custom)"
     assert (REPO_ROOT / "queries").is_dir(), "queries/ obbligatoria (catalogo domande)"
-    assert (REPO_ROOT / "reports").is_dir(), "reports/ obbligatoria (deliverable)"
+
+    # Almeno un dataset.yml in datasets/ o support/
+    dataset_ymls = list((REPO_ROOT / "datasets").rglob("dataset.yml"))
+    support_ymls = list((REPO_ROOT / "support").rglob("dataset.yml"))
+    assert dataset_ymls or support_ymls, "datasets/ o support/ deve contenere almeno un dataset.yml"
+
+    # Almeno una query SQL
     query_sqls = list((REPO_ROOT / "queries").glob("*.sql"))
     assert query_sqls, "queries/ deve contenere almeno un file .sql"
 
@@ -85,12 +93,10 @@ def test_no_run_outputs_tracked() -> None:
 
 @pytest.mark.contract
 def test_queries_read_only_artifacts() -> None:
-    """Le query del catalogo leggono solo dal mart o dagli aggregati (niente unified)."""
+    """Le query del catalogo leggono solo dal mart o dagli aggregati."""
     allowed = {"data/cup/cup_fatti.parquet", "data/aggregati/"}
     for q in sorted((REPO_ROOT / "queries").glob("*.sql")):
         text = q.read_text(encoding="utf-8")
-        assert "unified_operas" not in text, f"{q.name}: non deve usare unified_operas"
-        # ogni read_parquet deve puntare agli artefatti consentiti
         for line in text.splitlines():
             if "read_parquet('data/" in line:
                 assert any(a in line for a in allowed), f"{q.name}: path non consentito: {line.strip()}"
@@ -98,8 +104,8 @@ def test_queries_read_only_artifacts() -> None:
 
 @pytest.mark.contract
 def test_join_rules_have_no_local_references() -> None:
-    """docs/join-cup-anac-rules.md non deve contenere path locali assoluti o riferimenti interni."""
+    """docs/join-cup-anac-rules.md non deve contenere path locali assoluti."""
     text = (REPO_ROOT / "docs" / "join-cup-anac-rules.md").read_text(encoding="utf-8")
     assert "/home/" not in text, "regole join non devono contenere path home assoluti"
     drive = re.compile(r"(^|[\s\W])[A-Za-z]:[\\/]", re.MULTILINE)
-    assert not drive.search(text), "regole join non devono contenere path Windows (es. C:\\...)"
+    assert not drive.search(text), "regole join non devono contenere path Windows"

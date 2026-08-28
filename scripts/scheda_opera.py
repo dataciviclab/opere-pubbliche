@@ -2,8 +2,8 @@
 """Genera la scheda markdown di un'opera dal catalogo queries/08_scheda_opera.sql.
 
 Uso:
-    python3 reports/scheda_opera.py F81H92000000008          # 1 opera → data/reporting/schede/
-    python3 reports/scheda_opera.py --all                    # tutte le schede in config SEED
+    python3 scripts/scheda_opera.py F81H92000000008          # 1 opera → data/reporting/schede/
+    python3 scripts/scheda_opera.py --all                    # tutte le schede in config SEED
 
 Le schede sono pensate per il forum (1 discussione = 1 opera): numeri dal mart,
 formato compatto, niente fronzoli. Output: data/reporting/schede/{cup}.md
@@ -95,7 +95,7 @@ def scheda(con: duckdb.DuckDBPyConnection, cup: str, nome: str | None = None) ->
 
     md += ["", "## Localizzazione", ""]
     md += [f"- {fmt_loc(r['comune'], r['provincia'], r['regione'])}"]
-    md += ["", "_Fonte: OpenCUP + Lab (ANAC/PNRR/coesione) + SILOS. Generata da `reports/scheda_opera.py`._"]
+    md += ["", "_Fonte: OpenCUP + Lab (ANAC/PNRR/coesione) + SILOS. Generata da `scripts/scheda_opera.py`._"]
     return "\n".join(md)
 
 

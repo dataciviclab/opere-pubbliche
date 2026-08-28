@@ -32,7 +32,7 @@ con DuckDB (path contract `lab-connectors`, URL https nativi). Nessuna cache loc
 | PNRR gare | `pnrr_gare` | CUP → CIG, importi aggiudicazione |
 | PNRR pagamenti | `pnrr_pagamenti` | pagamenti PNRR |
 
-- **Anno di riferimento:** 2026 (constante `https_url(..., year=2026)` in `pipeline.py`)
+- **Anno di riferimento:** 2026 (constante `https_url(..., year=2026)` in `scripts/metriche_anac.py`)
 - **Licenza dei dati:** il Lab pubblica dati pubblici ufficiali; i file sono già puliti e normalizzati.
 
 ## Note qualità e pubblicazione
