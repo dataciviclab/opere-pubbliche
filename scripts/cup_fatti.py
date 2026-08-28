@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Genera cup_fatti: 1 riga per CUP con anagrafe + metriche Lab.
 
 Legge:

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Materializza le metriche Lab per CUP in data/build/.
 
 Legge i clean parquet da GCS (bucket pubblici, zero stale data) e produce

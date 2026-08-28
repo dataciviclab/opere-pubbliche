@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Fetch, extract e merge dei 7 shard OpenCUP Progetti in un singolo parquet.
 
 Output: out/data/raw/opencup_progetti/2026/opencup_progetti.parquet

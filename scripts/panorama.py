@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Panorama opere pubbliche — deliverable in data/reporting/ (md + json).
 
 Legge gli aggregati (data/aggregati/) e serializza i numeri chiave.
