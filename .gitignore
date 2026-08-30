@@ -1,26 +1,28 @@
-# Dati (raw OpenCUP 15GB, artefatti, cache) — mai in git
-opencup/data/raw/
-opencup/data/parquet/
+# Dati — mai in git (CI committa con git add -f)
 data/
+out/
 
-# File di dati generici
-*.csv
-*.zip
-*.parquet
-
-# Note e materiali interni del Lab — mai in git
-_local/
-
-# Ambiente / secrets / tooling locale
-.env
-.env.*
-!.env.example
-.venv/
+# File binari solo alla root
+/*.csv
+/*.zip
+/*.parquet
+/*.xlsx
 
 # Python
 __pycache__/
 *.pyc
+.venv/
 .pytest_cache/
 .ruff_cache/
-.coverage
-.mypy_cache/
+.env
+_local/
+
+# Build
+*.egg-info/
+dist/
+build/
+batch.txt
+
+# Toolkit output nelle cartelle dataset
+datasets/*/raw_input.csv
+datasets/*/raw_input.parquet

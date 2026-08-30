@@ -1,0 +1,53 @@
+root: "../../out"
+schema_version: 1
+
+dataset:
+  name: "opencup_soggetti"
+  source_id: "opencup"
+  tags: [opere, opencup, soggetti, support]
+  category: support
+  description: "Anagrafiche soggetti titolari e richiedenti dei CUP."
+  years: [2026]
+  time_coverage:
+    start_year: 1990
+    end_year: 2026
+
+raw:
+  output_policy: overwrite
+  extractor:
+    type: "unzip_first_csv"
+  sources:
+    - name: "opencup_soggetti"
+      type: "http_file"
+      args:
+        url: "https://www.opencup.gov.it/portale/documents/21195/299152/OpendataSoggetti.zip/411e1e80-bce0-d085-bb96-b8036deb590f"
+      primary: true
+
+clean:
+  sql: "sql/clean.sql"
+  read:
+    source: auto
+    mode: latest
+    delim: ";"
+    encoding: utf-8
+    header: true
+  required_columns: [soggetto_titolare, piva_codfiscale_sog_titolare]
+  validate:
+    not_null: [soggetto_titolare]
+    min_rows: 1000
+
+mart:
+  tables:
+    - name: "mart_soggetti"
+      sql: "sql/mart_soggetti.sql"
+  required_tables: ["mart_soggetti"]
+  validate:
+    table_rules:
+      mart_soggetti:
+        not_null: [soggetto_titolare]
+
+validation:
+  fail_on_error: true
+
+output:
+  artifacts: "minimal"

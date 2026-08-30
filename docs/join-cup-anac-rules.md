@@ -52,7 +52,7 @@ Per i join CUP→ANAC/PNRR-gare nel mart:
 
 ## Implementazione
 
-- `pipeline.py step_metrics`: aggiungere `flag_ombrello` (n_cig >= 50) e
+- `scripts/metriche_anac.py`: aggiungere `flag_ombrello` (n_cig >= 50) e
   colonne `anac_n_gare_piccole` / `anac_importo_gare_piccole` (solo CIG sotto
   soglia) al posto della somma totale.
 - Le query che aggregano importi ANAC devono usare le colonne "piccole",

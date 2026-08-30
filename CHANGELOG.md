@@ -3,6 +3,19 @@
 Tutte le modifiche di rilievo a questo progetto sono documentate qui.
 Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.1.0/).
 
+## [0.2.0] — 2026-08-28
+
+### Cambiato (modernizzazione a pattern DPI)
+
+- **Toolkit pipeline**: 4 dataset processati da toolkit (`datasets/` + `support/`), con `dataset.yml` + `sql/clean.sql` + `sql/mart.sql`.
+- **Support datasets**: opencup-localizzazione, opencup-fonti, opencup-soggetti in `support/` con `type: http_file` + `extractor: unzip_first_csv`.
+- **Progetti**: `type: local_file` con parquet prodotto da `opencup/scripts/fetch_progetti.py`.
+- **CI**: `ci.yml` (lint + config check) + `pipeline.yml` (toolkit + scripts + GCS sync + registry).
+- **Makefile**: pattern DPI (`run-all`, `run-seeds`, `metrics`, `layers`, `panorama`, `registry`).
+- **pyproject.toml**: build-system, markers pytest, ruff, toolkit.extends, extra pipeline.
+- **Scripts**: `scripts/metriche_anac.py`, `scripts/cup_fatti.py`, `scripts/panorama.py`.
+- **Rimossi**: `pipeline.py` (legacy), `test_smoke.py` (root), `download_opencup.py`, `convert_to_parquet.py`.
+
 ## [0.1.0] — 2026-08-18
 
 ### Aggiunto (public readiness)

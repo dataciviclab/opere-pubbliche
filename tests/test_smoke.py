@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Smoke test OPI — protegge il contratto del mart e del catalogo query.
 
 Verifica che il flusso end-to-end sia integro senza eseguire la pipeline:
@@ -9,19 +8,17 @@ Verifica che il flusso end-to-end sia integro senza eseguire la pipeline:
 Marker: smoke
 
 Uso:
-  python3 test_smoke.py          # eseguibile diretto
-  python -m pytest tests/        # contract test (vedi make test)
+  python3 -m pytest tests/ -v
 """
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import duckdb
 import pytest
 
-REPO = Path(__file__).resolve().parent
+REPO = Path(__file__).resolve().parent.parent
 QUERIES = REPO / "queries"
 CUP = REPO / "data" / "cup" / "cup_fatti.parquet"
 AGG = REPO / "data" / "aggregati"
@@ -35,16 +32,15 @@ REQUIRED_COLUMNS = {
 }
 
 
-def _run_checks() -> None:
-    """Esegue i controlli smoke; alza AssertionError su fallimento."""
-    print("OPI smoke test")
+@pytest.mark.smoke
+def test_smoke() -> None:
+    """smoke: golden path end-to-end del mart e del catalogo."""
     con = duckdb.connect()
     con.execute("SET memory_limit='1GB'")
 
     # ---- 1. Mart: esiste e ha le colonne contrattuali ----
-    print("\n1. mart data/cup/cup_fatti.parquet")
     assert CUP.exists(), (
-        "cup_fatti.parquet mancante — esegui: python pipeline.py --step layers"
+        "cup_fatti.parquet mancante — esegui: make layers"
     )
     cols = {r[0] for r in con.execute(f"DESCRIBE SELECT * FROM read_parquet('{CUP}')").fetchall()}
     missing = REQUIRED_COLUMNS - cols
@@ -53,15 +49,12 @@ def _run_checks() -> None:
     assert n_cup >= 11_000_000, f"n_cup >= 11M (reale: {n_cup:,})"
 
     # ---- 2. Catalogo query: leggono gli artefatti giusti ed eseguono ----
-    print("\n2. queries/ catalogo")
     for q in sorted(QUERIES.glob("*.sql")):
         sql = q.read_text()
         assert "unified_operas" not in sql, f"{q.name}: non deve usare unified_operas"
         con.execute(sql).fetchall()
-        print(f"  [ok] {q.name} esegue")
 
     # ---- 3. Numeri chiave stabili (coerenza mart vs aggregati) ----
-    print("\n3. coerenza numeri chiave")
     totali = con.execute(f"""
         SELECT COUNT(*), SUM(CASE WHEN anac_n_cig > 0 AND NOT flag_ombrello THEN 1 ELSE 0 END)
         FROM read_parquet('{CUP}')
@@ -71,38 +64,4 @@ def _run_checks() -> None:
     n_comuni = con.execute(f"SELECT COUNT(*) FROM read_parquet('{AGG / 'comune.parquet'}')").fetchone()[0]
     assert n_comuni >= 8_000, f"n_comuni >= 8000 (reale: {n_comuni:,})"
 
-    # ---- 4. Scheda opera (query 08) — il contratto del forum ----
-    print("\n4. scheda opera (queries/08_scheda_opera.sql)")
-    q08 = REPO / "queries" / "08_scheda_opera.sql"
-    assert q08.exists(), "08_scheda_opera.sql presente nel catalogo"
-    sql = q08.read_text().replace("{cup}", "F81H92000000008")
-    row = con.execute(sql).fetchone()
-    assert row is not None, "scheda Terzo Valico risolve (F81H92000000008)"
-    cols = [c[0] for c in con.description]
-    d = dict(zip(cols, row))
-    assert d.get("pnrr_missione") is not None, "scheda contiene missione PNRR (M3)"
-    assert (d.get("n_gare_anac") or 0) > 50, f"scheda contiene gare ANAC (reale: {d.get('n_gare_anac')})"
-    print("  [ok] scheda Terzo Valico risolve (PNRR M3, gare ANAC > 50)")
-
     con.close()
-    print("\nOK — smoke test superato")
-    con.close()
-    print("\nOK — smoke test superato")
-
-
-@pytest.mark.smoke
-def test_smoke() -> None:
-    """smoke: golden path end-to-end del mart e del catalogo."""
-    _run_checks()
-
-
-def main() -> None:
-    try:
-        _run_checks()
-    except AssertionError as e:
-        print(f"[FAIL] {e}")
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

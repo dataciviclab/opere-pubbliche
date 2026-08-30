@@ -47,13 +47,22 @@ leggibili.
 
 ## Metodo
 
-Pipeline unica end-to-end (un solo entry point `pipeline.py`):
+Pipeline toolkit + scripts custom:
 
 ```
-FONTE (OpenCUP locale, refresh mensile)
-  └─> metrics (metriche Lab lette da GCS, direct-read)   [make metrics]
-       └─> mart cup_fatti (1 riga per CUP) + aggregati    [make layers]
-            └─> queries catalogo + reporting/panorama    [make panorama]
+FETCH (make opencup)
+  └─> fetch_progetti.py: Liferay → ZIP → 7 CSV → parquet
+
+TOOLKIT (make run-all)
+  ├─> datasets/opencup-progetti: local_file → clean → mart
+  ├─> support/opencup-localizzazione: http_file + unzip_first_csv → clean → mart
+  ├─> support/opencup-fonti: http_file + unzip_first_csv → clean → mart
+  └─> support/opencup-soggetti: http_file + unzip_first_csv → clean → mart
+
+ANALISI (make metrics → layers → panorama)
+  ├─> scripts/metriche_anac.py: metriche Lab da GCS → data/build/
+  ├─> scripts/cup_fatti.py: join OpenCUP + metriche → cup_fatti + aggregati
+  └─> scripts/panorama.py: deliverable → data/reporting/
 ```
 
 Per dettagli di esecuzione vedi [contributing.md](contributing.md) e il README principale.

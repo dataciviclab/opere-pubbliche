@@ -16,7 +16,7 @@ Gli standard del Lab sono centralizzati e non vengono duplicati qui. Questa pagi
 ## Motore tecnico condiviso
 
 - [lab-connectors](https://github.com/dataciviclab/lab-connectors): path contract GCS,
-  config DuckDB/GCS, HTTP client. `pipeline.py` li usa per leggere i layer Lab da GCS.
+  config DuckDB/GCS, HTTP client. Gli script in `scripts/` li usano per leggere i layer Lab da GCS.
 - [lab-ops](https://github.com/dataciviclab/lab-ops): convenzioni operative (vertical-repo,
   README, test-policy, descrizioni repo).
 

@@ -1,0 +1,53 @@
+root: "../../out"
+schema_version: 1
+
+dataset:
+  name: "opencup_fonti"
+  source_id: "opencup"
+  tags: [opere, opencup, fonti-finanziamento, support]
+  category: support
+  description: "Fonti di copertura finanziaria dei CUP — statale, regionale, UE, privata."
+  years: [2026]
+  time_coverage:
+    start_year: 1990
+    end_year: 2026
+
+raw:
+  output_policy: overwrite
+  extractor:
+    type: "unzip_first_csv"
+  sources:
+    - name: "opencup_fonti"
+      type: "http_file"
+      args:
+        url: "https://www.opencup.gov.it/portale/documents/21195/299152/OpendataFontiCopertura.zip/229bb5a8-cb28-cb64-dfd8-44ebac4b3693"
+      primary: true
+
+clean:
+  sql: "sql/clean.sql"
+  read:
+    source: auto
+    mode: latest
+    delim: ";"
+    encoding: utf-8
+    header: true
+  required_columns: [cup, copertura_finanziaria]
+  validate:
+    not_null: [cup]
+    min_rows: 10000000
+
+mart:
+  tables:
+    - name: "mart_fonti"
+      sql: "sql/mart_fonti.sql"
+  required_tables: ["mart_fonti"]
+  validate:
+    table_rules:
+      mart_fonti:
+        not_null: [cup]
+
+validation:
+  fail_on_error: true
+
+output:
+  artifacts: "minimal"

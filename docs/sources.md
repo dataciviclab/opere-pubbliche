@@ -13,9 +13,9 @@ Consiglio (DIPE). Tutti i progetti di investimento pubblico in Italia.
 | `OpendataFontiCopertura.zip` | fonti di copertura finanziaria | 161 MB |
 
 - **Portale:** https://www.opencup.gov.it/portale/web/opencup/accesso-agli-open-data
-- **Download + convert:** `make opencup` (o manualmente con i due script
-  `opencup/scripts/download_opencup.py` + `convert_to_parquet.py`). Gli URL correnti
-  sono estratti dalla pagina (robusto al cambio dei link Liferay `?t=...`)
+- **Download:** `make opencup` (esegue `opencup/scripts/fetch_progetti.py` per Progetti;
+  gli altri 3 dataset vengono scaricati direttamente da toolkit via HTTP).
+  Gli URL sono estratti dalla pagina Liferay (robusto al cambio dei link `?t=...`).
 - **Frequenza:** aggiornamento mensile (download locale in `opencup/data/`, fuori git)
 - **Formato origine:** CSV delimitato `;`, encoding UTF-8, header
 
@@ -32,7 +32,7 @@ con DuckDB (path contract `lab-connectors`, URL https nativi). Nessuna cache loc
 | PNRR gare | `pnrr_gare` | CUP → CIG, importi aggiudicazione |
 | PNRR pagamenti | `pnrr_pagamenti` | pagamenti PNRR |
 
-- **Anno di riferimento:** 2026 (constante `https_url(..., year=2026)` in `pipeline.py`)
+- **Anno di riferimento:** 2026 (constante `https_url(..., year=2026)` in `scripts/metriche_anac.py`)
 - **Licenza dei dati:** il Lab pubblica dati pubblici ufficiali; i file sono già puliti e normalizzati.
 
 ## Note qualità e pubblicazione

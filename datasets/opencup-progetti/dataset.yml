@@ -1,0 +1,49 @@
+root: "../../out"
+schema_version: 1
+
+dataset:
+  name: "opencup_progetti"
+  source_id: "opencup"
+  tags: [opere, opencup, cup, investimenti-pubblici]
+  category: appalti
+  description: "Anagrafica OpenCUP — tutti i progetti di investimento pubblico italiano (1990-oggi)."
+  years: [2026]
+  time_coverage:
+    start_year: 1990
+    end_year: 2026
+
+raw:
+  output_policy: overwrite
+  sources:
+    - name: "opencup_progetti"
+      type: "local_file"
+      args:
+        path: "../../opencup/data/parquet/opencup_progetti.parquet"
+      primary: true
+
+clean:
+  sql: "sql/clean.sql"
+  read:
+    source: auto
+    mode: latest
+  required_columns: [cup, anno_decisione, stato_progetto, costo_progetto, finanziamento_progetto, soggetto_titolare, settore_intervento]
+  validate:
+    not_null: [cup]
+    min_rows: 10000000
+
+mart:
+  tables:
+    - name: "mart_progetti"
+      sql: "sql/mart_progetti.sql"
+  required_tables: ["mart_progetti"]
+  validate:
+    table_rules:
+      mart_progetti:
+        not_null: [cup]
+        primary_key: [cup]
+
+validation:
+  fail_on_error: true
+
+output:
+  artifacts: "standard"

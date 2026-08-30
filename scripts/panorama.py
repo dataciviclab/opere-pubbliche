@@ -1,12 +1,11 @@
-#!/usr/bin/env python3
 """Panorama opere pubbliche — deliverable in data/reporting/ (md + json).
 
-Esegue le query catalogate (queries/) sugli aggregati (leggeri, istantanei)
-e serializza i numeri chiave. Output:
+Legge gli aggregati (data/aggregati/) e serializza i numeri chiave.
+Output:
   data/reporting/panorama.md
   data/reporting/panorama.json
 
-Uso: make panorama  (o python3 reports/panorama.py)
+Uso: make panorama  (o python3 scripts/panorama.py)
 """
 
 from __future__ import annotations
@@ -16,7 +15,7 @@ from pathlib import Path
 
 import duckdb
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parent.parent
 AGG = REPO / "data" / "aggregati"
 OUT = REPO / "data" / "reporting"
 
