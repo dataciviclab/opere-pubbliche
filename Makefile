@@ -1,63 +1,53 @@
 # Opere Pubbliche Intelligence — Makefile
-# Pipeline toolkit (dataset.yml) + script analitici.
-# Convenzione Lab: toolkit gestisce fetch→clean→mart; gli script
-# Python gestiscono metriche, cup_fatti, panorama.
+# Convenzione (ADR-001, modello multi-dataset):
+#   datasets/  = dataset principali (anagrafe OpenCUP)
+#   support/   = lookup OpenCUP (fonti, localizzazione, soggetti)
+#   compose/   = cross-dataset compose (fonti Lab, cup_fatti, panorama)
+# Il toolkit gestisce fetch→clean→mart; gli script Python gestiscono
+# download OpenCUP (fetch_progetti.py) e deliverable speciali.
 TOOLKIT = toolkit
 
 # --- Dataset del repo -------------------------------------------------------
 DATASETS := $(shell find datasets support -name dataset.yml 2>/dev/null | sort)
+COMPOSE  := $(shell find compose -name dataset.yml 2>/dev/null | sort)
 
 # --- Fetch OpenCUP (manuale, mensile) ---------------------------------------
 # Progetti: script fetch+extract+merge → out/raw (per toolkit)
-# Localizzazione/Fonti: toolkit scarica nativamente da HTTP
 
 .PHONY: opencup
 opencup:
-	python3 opencup/scripts/fetch_progetti.py
+	TOOLKIT_ALLOW_SCRIPT_SOURCE=1 $(TOOLKIT) run --config datasets/opencup-progetti/dataset.yml
 
-# --- Run toolkit ------------------------------------------------------------
+# --- Compose (eseguire dopo i dataset singoli) ------------------------------
+
+.PHONY: compose
+compose:
+	@for f in $(COMPOSE); do \
+		echo "=== $$f ==="; \
+		$(TOOLKIT) run --config "$$f" || exit 1; \
+	done
+
+# --- Dataset principali ------------------------------------------------------
 
 .PHONY: run
 run:
-	$(TOOLKIT) run --batch batch.txt
-
-.PHONY: run-seeds
-run-seeds:
-	@find support -name dataset.yml | sort > batch.txt; \
-	$(TOOLKIT) run --batch batch.txt
+	@for f in $(DATASETS); do \
+		echo "=== $$f ==="; \
+		$(TOOLKIT) run --config "$$f" || exit 1; \
+	done
 
 .PHONY: run-all
-run-all:
-	@find datasets support -name dataset.yml | sort > batch.txt; \
-	TOOLKIT_ALLOW_SCRIPT_SOURCE=1 $(TOOLKIT) run --batch batch.txt
+run-all: run compose
 
-# --- Validazione config ------------------------------------------------------
+# --- Validazione config -------------------------------------------------------
 
 .PHONY: check
 check:
-	@for f in $(DATASETS); do \
+	@for f in $(DATASETS) $(COMPOSE); do \
 		echo "→ $$f"; \
 		$(TOOLKIT) run preflight --config "$$f" > /dev/null 2>&1 || exit 1; \
 	done
 	@echo "✅ All configs valid"
-
-# --- Script analitici (leggono da GCS + out/) -------------------------------
-
-.PHONY: metrics
-metrics:
-	python3 scripts/metriche_anac.py
-
-.PHONY: layers panorama
-layers:
-	python3 scripts/cup_fatti.py
-
-panorama:
-	python3 scripts/panorama.py
-
-# --- Pipeline completa: toolkit + analitici + test ----------------------------
-
-.PHONY: all
-all: run-all metrics layers panorama test
 
 # --- Test --------------------------------------------------------------------
 
@@ -78,7 +68,7 @@ registry-write:
 
 .PHONY: clean
 clean:
-	rm -rf out/data/_runs out/data/probe out/data/raw out/data/clean out/data/mart
+	rm -rf out/data/_runs out/data/probe out/data/raw out/data/clean out/data/mart out/data/cross
 
 .PHONY: clean-data
 clean-data:

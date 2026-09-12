@@ -1,111 +1,170 @@
-"""Contract test per Opere Pubbliche Intelligence.
+"""Contract test per repo dataset multi-dataset (ADR-001).
 
-Verifica la forma del repo, non i dati:
-- presenza dei componenti richiesti (README, licenza, docs, workflow, tooling);
-- convenzione toolkit: datasets/ con dataset.yml, scripts/ per logica custom;
-- non si committano output di run (data/, out/, parquet/csv/zip).
+Verifica la struttura del repo, non il motore del toolkit:
+  - layout multi-dataset (datasets/ + support/ + compose/)
+  - ogni dataset espone un contratto minimo (dataset.yml, SQL dichiarati)
+  - i path dichiarati sono relativi e POSIX
+  - non si committano output di run (out/)
+  - presenza dei componenti condivisi (Makefile, requirements.txt, workflows)
 
-Non richiede i layer dati: è il gate rapido della CI.
-
-Marker: contract
+Markers: contract (contratto pubblico, artifact format).
 """
 
 from __future__ import annotations
 
 import re
-import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-
+OUT_DIR = REPO_ROOT / "out"
 REQUIRED_FILES = [
-    "README.md",
-    "LICENSE",
-    "Makefile",
-    "pyproject.toml",
-    "ruff.toml",
-    ".editorconfig",
-    ".gitattributes",
-    ".gitignore",
-    ".github/PULL_REQUEST_TEMPLATE.md",
-    ".github/workflows/ci.yml",
-    ".github/workflows/pipeline.yml",
-    "docs/README.md",
-    "docs/overview.md",
-    "docs/sources.md",
-    "docs/data_dictionary.md",
-    "docs/decisions.md",
-    "docs/contributing.md",
-    "docs/lab_links.md",
-    "docs/join-cup-anac-rules.md",
+    REPO_ROOT / "Makefile",
+    REPO_ROOT / "requirements.txt",
+    REPO_ROOT / "conftest.py",
+    REPO_ROOT / "LICENSE",
+    REPO_ROOT / "README.md",
+    REPO_ROOT / ".github" / "workflows" / "check.yml",
+    REPO_ROOT / ".github" / "workflows" / "pipeline.yml",
+    REPO_ROOT / ".github" / "PULL_REQUEST_TEMPLATE.md",
 ]
+BLOCKED_OUT_EXTENSIONS = {".parquet", ".csv", ".jsonl", ".zip", ".xlsx", ".tsv"}
 
-IGNORE_ENTRIES = {"data/", "out/", "_local/", "*.parquet", "*.csv", "*.zip", "__pycache__/",
-                  ".venv/", ".env"}
-BLOCKED_SUFFIXES = {".parquet", ".csv", ".zip", ".pyc"}
+
+def _iter_dataset_configs() -> list[Path]:
+    configs: list[Path] = []
+    for dirname in ("datasets", "support", "compose"):
+        base = REPO_ROOT / dirname
+        if base.exists():
+            configs.extend(sorted(base.glob("*/dataset.yml")))
+    return configs
+
+
+@pytest.fixture(scope="module")
+def dataset_configs() -> list[Path]:
+    configs = _iter_dataset_configs()
+    assert configs, "Il repo deve dichiarare almeno un dataset in datasets/, support/ o compose/"
+    return configs
 
 
 @pytest.mark.contract
 def test_required_files_exist() -> None:
-    missing = [p for p in REQUIRED_FILES if not (REPO_ROOT / p).exists()]
-    assert not missing, f"file richiesti mancanti: {missing}"
+    missing = [str(p.relative_to(REPO_ROOT)) for p in REQUIRED_FILES if not p.exists()]
+    assert not missing, f"Missing required files: {missing}"
 
 
 @pytest.mark.contract
-def test_required_dir_layout() -> None:
-    assert (REPO_ROOT / "datasets").is_dir(), "datasets/ obbligatoria (toolkit)"
-    assert (REPO_ROOT / "support").is_dir(), "support/ obbligatoria (lookup datasets)"
-    assert (REPO_ROOT / "scripts").is_dir(), "scripts/ obbligatoria (logica custom)"
-    assert (REPO_ROOT / "queries").is_dir(), "queries/ obbligatoria (catalogo domande)"
-
-    # Almeno un dataset.yml in datasets/ o support/
-    dataset_ymls = list((REPO_ROOT / "datasets").rglob("dataset.yml"))
-    support_ymls = list((REPO_ROOT / "support").rglob("dataset.yml"))
-    assert dataset_ymls or support_ymls, "datasets/ o support/ deve contenere almeno un dataset.yml"
-
-    # Almeno una query SQL
-    query_sqls = list((REPO_ROOT / "queries").glob("*.sql"))
-    assert query_sqls, "queries/ deve contenere almeno un file .sql"
+def test_layout_is_multidataset() -> None:
+    assert (REPO_ROOT / "datasets").is_dir(), "datasets/ e' obbligatoria nel modello multi-dataset"
+    root_config = REPO_ROOT / "dataset.yml"
+    assert not root_config.exists(), "Nel modello multi-dataset non esiste dataset.yml in root"
 
 
 @pytest.mark.contract
-def test_gitignore_blocks_outputs() -> None:
-    gi = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
-    missing = [entry for entry in IGNORE_ENTRIES if entry not in gi]
-    assert not missing, f".gitignore deve contenere: {missing}"
+def test_each_dataset_declares_minimum_contract(dataset_configs: list[Path]) -> None:
+    for cfg in dataset_configs:
+        dataset = yaml.safe_load(cfg.read_text(encoding="utf-8"))
+        rel = str(cfg.relative_to(REPO_ROOT))
+        assert dataset.get("schema_version") == 1, f"{rel}: schema_version != 1"
+        assert "root" in dataset, f"{rel}: manca root (path relativo a out/)"
+        assert "dataset" in dataset, f"{rel}: manca blocco dataset"
+        assert dataset["dataset"].get("name"), f"{rel}: manca dataset.name"
+        assert isinstance(dataset["dataset"].get("years"), list), f"{rel}: years deve essere una lista"
+        assert dataset["dataset"]["years"], f"{rel}: years non deve essere vuota"
+        assert "raw" in dataset and dataset["raw"].get("sources"), f"{rel}: manca raw.sources"
+        assert dataset["raw"]["sources"][0].get("primary") is True, f"{rel}: la prima source deve essere primary"
+        assert dataset["clean"]["sql"], f"{rel}: manca clean.sql"
+        assert dataset["clean"].get("required_columns"), f"{rel}: manca clean.required_columns"
+        assert dataset["clean"]["validate"].get("not_null"), f"{rel}: manca clean.validate.not_null"
+        min_rows = dataset["clean"]["validate"].get("min_rows")
+        assert isinstance(min_rows, int) and min_rows >= 1, f"{rel}: clean min_rows deve essere un intero >= 1"
+        assert dataset["mart"]["tables"], f"{rel}: manca mart.tables"
+        assert dataset["mart"].get("required_tables"), f"{rel}: manca mart.required_tables"
+        assert dataset["mart"]["validate"].get("table_rules"), f"{rel}: manca mart.validate.table_rules"
+        assert dataset["validation"]["fail_on_error"] is True, f"{rel}: fail_on_error deve essere true"
+        assert dataset.get("output", {}).get("artifacts") in {
+            "minimal", "standard", "debug",
+        }, f"{rel}: output.artifacts non valido"
+
+
+def _iter_path_values(node: object):
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if isinstance(value, str) and key in {
+                "root", "source", "sql", "target", "dir", "path", "filename",
+            }:
+                yield key, value
+            yield from _iter_path_values(value)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _iter_path_values(item)
 
 
 @pytest.mark.contract
-def test_no_run_outputs_tracked() -> None:
+def test_dataset_paths_are_relative_and_posix(dataset_configs: list[Path]) -> None:
+    for cfg in dataset_configs:
+        dataset = yaml.safe_load(cfg.read_text(encoding="utf-8"))
+        rel = str(cfg.relative_to(REPO_ROOT))
+        for key, value in _iter_path_values(dataset):
+            if value.startswith(("http://", "https://")):
+                continue
+            assert value, f"{rel}: path vuoto per '{key}'"
+            assert "\\" not in value, f"{rel}: path '{key}' deve usare separatori POSIX: {value}"
+            assert not value.startswith("/"), f"{rel}: path assoluto POSIX per '{key}': {value}"
+            assert not value.startswith("~"), f"{rel}: path home-relative per '{key}': {value}"
+            assert not re.match(r"^[A-Za-z]:[\\/]", value), f"{rel}: path Windows per '{key}': {value}"
+
+
+@pytest.mark.contract
+def test_declared_sql_files_exist(dataset_configs: list[Path]) -> None:
+    for cfg in dataset_configs:
+        dataset = yaml.safe_load(cfg.read_text(encoding="utf-8"))
+        cfg_dir = cfg.parent
+        rel = str(cfg.relative_to(REPO_ROOT))
+
+        clean_sql = (cfg_dir / dataset["clean"]["sql"]).resolve()
+        assert clean_sql.is_file(), f"{rel}: manca clean SQL dichiarato: {dataset['clean']['sql']}"
+
+        for table in dataset["mart"]["tables"]:
+            assert table.get("name"), f"{rel}: ogni mart table deve dichiarare un name"
+            assert table.get("sql"), f"{rel}: mart '{table['name']}' deve dichiarare un path SQL"
+            sql_path = (cfg_dir / table["sql"]).resolve()
+            assert sql_path.is_file(), f"{rel}: manca SQL mart dichiarato: {table['sql']}"
+
+
+@pytest.mark.contract
+def test_mart_table_names_are_unique(dataset_configs: list[Path]) -> None:
+    for cfg in dataset_configs:
+        dataset = yaml.safe_load(cfg.read_text(encoding="utf-8"))
+        names = [t["name"] for t in dataset["mart"]["tables"]]
+        rel = str(cfg.relative_to(REPO_ROOT))
+        assert len(names) == len(set(names)), f"{rel}: nomi mart duplicati: {names}"
+
+
+@pytest.mark.contract
+def test_required_tables_and_rules_match_declared_marts(dataset_configs: list[Path]) -> None:
+    for cfg in dataset_configs:
+        dataset = yaml.safe_load(cfg.read_text(encoding="utf-8"))
+        rel = str(cfg.relative_to(REPO_ROOT))
+        names = {t["name"] for t in dataset["mart"]["tables"]}
+        required = set(dataset["mart"]["required_tables"])
+        rules = set(dataset["mart"]["validate"]["table_rules"].keys())
+        assert required <= names, f"{rel}: mart.required_tables non riferisce tabelle dichiarate"
+        assert rules <= names, f"{rel}: mart.validate.table_rules non riferisce tabelle dichiarate"
+
+
+@pytest.mark.contract
+def test_no_run_outputs_committed() -> None:
     """Nessun artefatto dati tracked: usa git ls-files per escludere anche i symlink."""
+    import subprocess
     out = subprocess.run(
         ["git", "-C", str(REPO_ROOT), "ls-files"],
         capture_output=True, text=True, check=True,
     )
     offenders = [
         line for line in out.stdout.splitlines()
-        if line and Path(line).suffix.lower() in BLOCKED_SUFFIXES
+        if line and Path(line).suffix.lower() in BLOCKED_OUT_EXTENSIONS
     ]
     assert not offenders, f"artefatti dati non vanno committati: {offenders}"
-
-
-@pytest.mark.contract
-def test_queries_read_only_artifacts() -> None:
-    """Le query del catalogo leggono solo dal mart o dagli aggregati."""
-    allowed = {"data/cup/cup_fatti.parquet", "data/aggregati/"}
-    for q in sorted((REPO_ROOT / "queries").glob("*.sql")):
-        text = q.read_text(encoding="utf-8")
-        for line in text.splitlines():
-            if "read_parquet('data/" in line:
-                assert any(a in line for a in allowed), f"{q.name}: path non consentito: {line.strip()}"
-
-
-@pytest.mark.contract
-def test_join_rules_have_no_local_references() -> None:
-    """docs/join-cup-anac-rules.md non deve contenere path locali assoluti."""
-    text = (REPO_ROOT / "docs" / "join-cup-anac-rules.md").read_text(encoding="utf-8")
-    assert "/home/" not in text, "regole join non devono contenere path home assoluti"
-    drive = re.compile(r"(^|[\s\W])[A-Za-z]:[\\/]", re.MULTILINE)
-    assert not drive.search(text), "regole join non devono contenere path Windows"

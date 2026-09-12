@@ -1,28 +1,74 @@
-# Dati — mai in git (CI committa con git add -f)
+# =========================
+# OUTPUT DI RUN (NON VERSIONARE)
+# =========================
+out/*
+!out/.gitkeep
+
+# Dati — CI committa con git add -f
 data/
-out/
 
-# File binari solo alla root
-/*.csv
-/*.zip
-/*.parquet
-/*.xlsx
-
-# Python
+# =========================
+# NOTEBOOK / PYTHON
+# =========================
 __pycache__/
-*.pyc
-.venv/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
 .pytest_cache/
 .ruff_cache/
 .env
+.venv/
+venv/
+.envrc
+.coverage
+
+# =========================
+# TOOL / TEMP
+# =========================
+.tmp/
+.tmp/**
+_tmp/
+_tmp/**
+.cache/
+.cache/**
+logs/
+*.log
+
+# =========================
+# IDE / EDITOR
+# =========================
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+.idea/
+*.code-workspace
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# CREDENTIALS (MAI)
+# =========================
+credentials.json
+service_account.json
+*.key
+*.pem
+
+# =========================
+# ARCHIVI
+# =========================
+*.zip
+*.tar
+*.gz
+
+# =========================
+# ALTRO
+# =========================
+nohup.out
 _local/
-
-# Build
-*.egg-info/
-dist/
-build/
 batch.txt
-
-# Toolkit output nelle cartelle dataset
-datasets/*/raw_input.csv
-datasets/*/raw_input.parquet
