@@ -10,7 +10,7 @@ import streamlit as st
 from lab_connectors.duckdb.queries import load_mart_table, query_clean
 from lab_connectors.formatters import fmt_eur, fmt_num, fmt_pct
 
-PREFIX = "opere_pubbliche_intelligence/"
+PREFIX = "opere_pubbliche/"
 SLUG = "op_cup_lab"
 YEARS = [2026]
 

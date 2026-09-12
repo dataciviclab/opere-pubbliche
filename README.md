@@ -2,7 +2,7 @@
 
 **Dove vanno i soldi delle opere pubbliche in Italia? Chi li gestisce? Quanto arriva davvero a realizzazione?**
 
-[![CI](https://github.com/dataciviclab/opere-pubbliche-intelligence/actions/workflows/check.yml/badge.svg)](https://github.com/dataciviclab/opere-pubbliche-intelligence/actions/workflows/check.yml)
+[![CI](https://github.com/dataciviclab/opere-pubbliche/actions/workflows/check.yml/badge.svg)](https://github.com/dataciviclab/opere-pubbliche/actions/workflows/check.yml)
 [![Licenza: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Ogni progetto di investimento pubblico in Italia ha un CUP (Codice Unico di
