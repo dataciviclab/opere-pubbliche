@@ -99,6 +99,7 @@ opencoesione AS (
 silos AS (
     SELECT
         cup,
+        denominazione AS silos_denominazione,
         sistema_infrastrutturale AS silos_sistema,
         stato_attuazione AS silos_stato,
         macro_stato AS silos_macro_stato,
@@ -173,6 +174,7 @@ SELECT
     COALESCE(oc.coe_finanz_tot_pubblico, 0) AS coe_finanz_tot_pubblico,
     COALESCE(oc.coe_pagamenti, 0) AS coe_pagamenti,
     -- SILOS
+    s.silos_denominazione,
     s.silos_sistema,
     s.silos_stato,
     s.silos_macro_stato,

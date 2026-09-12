@@ -353,6 +353,48 @@
           "description": ""
         },
         {
+          "name": "silos_sistema",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "silos_stato",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "silos_macro_stato",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "silos_costi_mln",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "silos_disponibilita_mln",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "silos_fabbisogno_mln",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "silos_gap_mln",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
           "name": "area",
           "type": "VARCHAR",
           "role": "dimension",
@@ -750,6 +792,127 @@
       "mart_refs": [
         "opencup_soggetti__mart_soggetti"
       ]
+    },
+    {
+      "slug": "silos_infrastrutture",
+      "name": "Silos Infrastrutture",
+      "description": "Grandi opere pubbliche monitorate da SILOS — costi, stato attuazione, fabbisogno.",
+      "source": "",
+      "source_id": "dati_camera",
+      "period": {
+        "start": 2004,
+        "end": 2024
+      },
+      "tags": [
+        "opere",
+        "silos",
+        "infrastrutture",
+        "grande-opere"
+      ],
+      "category": "appalti",
+      "columns": [
+        {
+          "name": "anno",
+          "type": "INTEGER",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "year"
+        },
+        {
+          "name": "link_scheda",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "progressivo",
+          "type": "INTEGER",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "livello",
+          "type": "INTEGER",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "flag_commissariato_pnrr",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "sistema_infrastrutturale",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "cup",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "cup_code"
+        },
+        {
+          "name": "denominazione",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "soggetto_competente",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "luogo_lavori",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "stato_attuazione",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "anno_ultimazione_previsto",
+          "type": "INTEGER",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "costi_mln_euro",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "disponibilita_mln_euro",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "fabbisogno_mln_euro",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        }
+      ],
+      "location": {
+        "type": "gcs",
+        "path": "gs://dataciviclab-clean/opere_pubbliche/silos_infrastrutture/2024/silos_infrastrutture_2024_clean.parquet",
+        "multi_file": false
+      },
+      "stage": "incubating",
+      "mart_refs": [
+        "silos_infrastrutture__mart_silos"
+      ]
     }
   ],
   "marts": [
@@ -822,6 +985,16 @@
         "path": "gs://dataciviclab-mart/opere_pubbliche/opencup_soggetti/2026/mart_soggetti.parquet",
         "multi_file": false
       }
+    },
+    {
+      "slug": "silos_infrastrutture__mart_silos",
+      "dataset": "silos_infrastrutture",
+      "table": "mart_silos",
+      "location": {
+        "type": "gcs",
+        "path": "gs://dataciviclab-mart/opere_pubbliche/silos_infrastrutture/2024/mart_silos.parquet",
+        "multi_file": false
+      }
     }
   ],
   "signals": [
@@ -833,21 +1006,21 @@
       "detail": "anno 2026 — mart: si",
       "action": "",
       "run": {
-        "run_id": "20260912T180643Z_2e3c3527",
+        "run_id": "20260912T183209Z_39612f93",
         "year": 2026,
         "status": "SUCCESS",
         "quality_score": {
           "mart": 100
         },
         "output_rows": {
-          "mart": 5873
+          "mart": 5872
         },
         "output_bytes": {
-          "mart": 119735
+          "mart": 119804
         },
-        "started_at": "2026-09-12T18:06:43.593317+00:00",
-        "finished_at": "2026-09-12T18:06:45.329996+00:00",
-        "duration_seconds": 1.737
+        "started_at": "2026-09-12T18:32:09.649216+00:00",
+        "finished_at": "2026-09-12T18:32:12.604446+00:00",
+        "duration_seconds": 2.955
       }
     },
     {
@@ -864,6 +1037,37 @@
         "started_at": "2026-08-30T23:58:21.979795+00:00",
         "finished_at": "2026-08-31T00:04:12.396872+00:00",
         "duration_seconds": 350.417
+      }
+    },
+    {
+      "id": "silos_infrastrutture",
+      "source_id": "dati_camera",
+      "status": "ok",
+      "label": "silos_infrastrutture",
+      "detail": "anno 2024 — mart: si",
+      "action": "",
+      "run": {
+        "run_id": "20260912T182619Z_989f4da0",
+        "year": 2024,
+        "status": "SUCCESS",
+        "quality_score": {
+          "raw": 100,
+          "clean": 100,
+          "mart": 100
+        },
+        "output_rows": {
+          "raw": 3527,
+          "clean": 3527,
+          "mart": 3527
+        },
+        "output_bytes": {
+          "raw": 758647,
+          "clean": 150267,
+          "mart": 163257
+        },
+        "started_at": "2026-09-12T18:26:19.930319+00:00",
+        "finished_at": "2026-09-12T18:26:22.327172+00:00",
+        "duration_seconds": 2.397
       }
     },
     {
@@ -1039,10 +1243,16 @@
             "name": "Opencup Progetti",
             "column": "cup",
             "semantic_type": "cup_code"
+          },
+          {
+            "slug": "silos_infrastrutture",
+            "name": "Silos Infrastrutture",
+            "column": "cup",
+            "semantic_type": "cup_code"
           }
         ],
         "types": {
-          "cup_code": 4
+          "cup_code": 5
         }
       },
       "Provincia": {
@@ -1104,6 +1314,21 @@
         "types": {
           "region_code": 3
         }
+      },
+      "Tempo": {
+        "entity": "Tempo",
+        "label": "Tempo / data",
+        "datasets": [
+          {
+            "slug": "silos_infrastrutture",
+            "name": "Silos Infrastrutture",
+            "column": "anno",
+            "semantic_type": "year"
+          }
+        ],
+        "types": {
+          "year": 1
+        }
       }
     },
     "bridges": [
@@ -1150,6 +1375,19 @@
         "from": {
           "entity": "Progetto",
           "dataset": "opencup_progetti",
+          "via": "cup_code"
+        },
+        "to": {
+          "entity": "Comune",
+          "bridge": "anac_cup",
+          "on": "cup",
+          "semantic_type": "municipality_code"
+        }
+      },
+      {
+        "from": {
+          "entity": "Progetto",
+          "dataset": "silos_infrastrutture",
           "via": "cup_code"
         },
         "to": {
