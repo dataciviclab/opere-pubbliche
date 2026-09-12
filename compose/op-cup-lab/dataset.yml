@@ -1,0 +1,61 @@
+root: "../../out"
+schema_version: 1
+
+dataset:
+  name: "op_cup_lab"
+  source_id: "dataciviclab_composite"
+  tags: [opere, opencup, cup, compose, intelligence]
+  category: appalti
+  description: "Compose CUP-level: anagrafe OpenCUP + localizzazione + fonti + Lab (PNRR, ANAC, OpenCoesione). 1 riga per CUP con tutti gli attributi."
+  years: [2026]
+  time_coverage:
+    mode: snapshot
+
+raw:
+  output_policy: overwrite
+  sources:
+    - name: "mart_progetti"
+      type: local_file
+      args:
+        path: "../../out/data/mart/opencup_progetti/2026/mart_progetti.parquet"
+        filename: "mart_progetti.parquet"
+      primary: true
+
+clean:
+  sql: "sql/clean.sql"
+  read:
+    source: config_only
+    mode: latest
+  required_columns:
+    - "cup"
+    - "costo_progetto"
+    - "settore_intervento"
+  validate:
+    not_null:
+      - "cup"
+    min_rows: 10000000
+
+mart:
+  tables:
+    - name: "mart_territorio"
+      sql: "sql/mart_territorio.sql"
+    - name: "mart_fonti"
+      sql: "sql/mart_fonti.sql"
+  required_tables:
+    - mart_territorio
+    - mart_fonti
+  validate:
+    table_rules:
+      mart_territorio:
+        min_rows: 100
+      mart_fonti:
+        min_rows: 10
+
+duckdb:
+  memory_limit: "6GB"
+
+validation:
+  fail_on_error: true
+
+output:
+  artifacts: "standard"

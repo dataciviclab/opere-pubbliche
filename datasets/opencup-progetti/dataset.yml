@@ -35,10 +35,15 @@ mart:
   tables:
     - name: "mart_progetti"
       sql: "sql/mart_progetti.sql"
-  required_tables: ["mart_progetti"]
+    - name: "mart_opencup"
+      sql: "sql/mart_opencup.sql"
+  required_tables: ["mart_progetti", "mart_opencup"]
   validate:
     table_rules:
       mart_progetti:
+        not_null: [cup]
+        primary_key: [cup]
+      mart_opencup:
         not_null: [cup]
         primary_key: [cup]
 
