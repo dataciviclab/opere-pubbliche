@@ -93,6 +93,22 @@ opencoesione AS (
     FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/incubation/dataset-incubator/out/data/clean/opencoesione_progetti/2026/opencoesione_progetti_2026_clean.parquet')
     WHERE CUP IS NOT NULL AND TRIM(CUP) != ''
     GROUP BY CUP
+),
+
+-- SILOS: macro-opere con costi e stato attuazione
+silos AS (
+    SELECT
+        cup,
+        sistema_infrastrutturale AS silos_sistema,
+        stato_attuazione AS silos_stato,
+        macro_stato AS silos_macro_stato,
+        costi_mln_euro AS silos_costi_mln,
+        disponibilita_mln_euro AS silos_disponibilita_mln,
+        fabbisogno_mln_euro AS silos_fabbisogno_mln,
+        gap_finanziario_mln_euro AS silos_gap_mln
+    FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/opere-pubbliche/out/data/mart/silos_infrastrutture/2024/mart_silos.parquet')
+    WHERE cup IS NOT NULL AND TRIM(cup) != ''
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY cup ORDER BY costi_mln_euro DESC NULLS LAST) = 1
 )
 
 SELECT
@@ -156,6 +172,14 @@ SELECT
     COALESCE(oc.coe_n_progetti, 0) AS coe_n_progetti,
     COALESCE(oc.coe_finanz_tot_pubblico, 0) AS coe_finanz_tot_pubblico,
     COALESCE(oc.coe_pagamenti, 0) AS coe_pagamenti,
+    -- SILOS
+    s.silos_sistema,
+    s.silos_stato,
+    s.silos_macro_stato,
+    s.silos_costi_mln,
+    s.silos_disponibilita_mln,
+    s.silos_fabbisogno_mln,
+    s.silos_gap_mln,
     -- Derivate
     CASE
         WHEN l.regione IN ('LOMBARDIA','PIEMONTE','VENETO','EMILIA-ROMAGNA','TOSCANA','LIGURIA',
@@ -176,3 +200,4 @@ LEFT JOIN pnrr_gare ON p.cup = pnrr_gare.cup
 LEFT JOIN pnrr_pagamenti ON p.cup = pnrr_pagamenti.cup
 LEFT JOIN anac a ON p.cup = a.cup
 LEFT JOIN opencoesione oc ON p.cup = oc.cup
+LEFT JOIN silos s ON p.cup = s.cup

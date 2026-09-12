@@ -1,0 +1,1164 @@
+{
+  "schema_version": 1,
+  "repo": "opere-pubbliche-intelligence",
+  "source_repo": "dataciviclab/opere-pubbliche-intelligence",
+  "updated_at": "2026-09-12",
+  "datasets": [
+    {
+      "slug": "op_cup_lab",
+      "name": "Op Cup Lab",
+      "description": "Compose CUP-level: anagrafe OpenCUP + localizzazione + fonti + Lab (PNRR, ANAC, OpenCoesione). 1 riga per CUP con tutti gli attributi.",
+      "source": "",
+      "source_id": "dataciviclab_composite",
+      "period": {
+        "start": 2026,
+        "end": 2026
+      },
+      "tags": [
+        "opere",
+        "opencup",
+        "cup",
+        "compose",
+        "intelligence"
+      ],
+      "category": "appalti",
+      "columns": [
+        {
+          "name": "cup",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "cup_code"
+        },
+        {
+          "name": "anno_decisione",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "stato_progetto",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "costo_progetto",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "costo_mld",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "finanziamento_progetto",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "soggetto_titolare",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "piva_soggetto_titolare",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "natura_intervento",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "tipologia_intervento",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "settore_intervento",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "categoria_intervento",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "codice_settore",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "codice_categoria",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "descrizione_intervento",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "codice_locale_progetto",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "data_generazione_cup",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "cup_master",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "flag_chiuso",
+          "type": "BOOLEAN",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "flag_sub_progetto",
+          "type": "BOOLEAN",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "regione",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "region_code"
+        },
+        {
+          "name": "provincia",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "province_code"
+        },
+        {
+          "name": "comune",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "municipality_name"
+        },
+        {
+          "name": "codice_comune",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "municipality_code"
+        },
+        {
+          "name": "n_fonti",
+          "type": "BIGINT",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "ha_fonte_statale",
+          "type": "BOOLEAN",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "ha_fonte_ue",
+          "type": "BOOLEAN",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "ha_fonte_regionale",
+          "type": "BOOLEAN",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "ha_fonte_privata",
+          "type": "BOOLEAN",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "pnrr_missione",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "pnrr_descrizione_missione",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "pnrr_amministrazione_titolare",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "pnrr_stato_avanzamento",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "pnrr_fin_pnrr",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "pnrr_fin_totale",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "pnrr_n_gare",
+          "type": "BIGINT",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "pnrr_n_gare_con_cig",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "pnrr_importo_aggiudicato",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "pag_fin_pnrr",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "pag_pagato_pnrr",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "pag_pagato_totale",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "pag_assorbimento_pct",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "anac_n_cig",
+          "type": "BIGINT",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "anac_n_gare",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "anac_importo_aggiudicato",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "anac_n_collaudati",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "anac_n_sal",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "anac_importo_sal",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "anac_sal_in_ritardo",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "anac_data_ultima_agg",
+          "type": "DATE",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "flag_ombrello",
+          "type": "BOOLEAN",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "coe_n_progetti",
+          "type": "BIGINT",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "coe_finanz_tot_pubblico",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "coe_pagamenti",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "area",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "con_almeno_una_fonte_lab",
+          "type": "BOOLEAN",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "n_fonti_lab",
+          "type": "INTEGER",
+          "role": "metric",
+          "description": ""
+        }
+      ],
+      "location": {
+        "type": "gcs",
+        "path": "gs://dataciviclab-clean/opere_pubbliche/op_cup_lab/2026/op_cup_lab_2026_clean.parquet",
+        "multi_file": false
+      },
+      "stage": "incubating",
+      "mart_refs": [
+        "op_cup_lab__mart_territorio",
+        "op_cup_lab__mart_fonti"
+      ]
+    },
+    {
+      "slug": "opencup_fonti",
+      "name": "Opencup Fonti",
+      "description": "Fonti di copertura finanziaria dei CUP — statale, regionale, UE, privata.",
+      "source": "",
+      "source_id": "opencup",
+      "period": {
+        "start": 1990,
+        "end": 2026
+      },
+      "tags": [
+        "opere",
+        "opencup",
+        "fonti-finanziamento",
+        "support"
+      ],
+      "category": "support",
+      "columns": [
+        {
+          "name": "cup",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "cup_code"
+        },
+        {
+          "name": "codice_copertura",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "copertura_finanziaria",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        }
+      ],
+      "location": {
+        "type": "gcs",
+        "path": "gs://dataciviclab-clean/opere_pubbliche/opencup_fonti/2026/opencup_fonti_2026_clean.parquet",
+        "multi_file": false
+      },
+      "stage": "incubating",
+      "mart_refs": [
+        "opencup_fonti__mart_fonti"
+      ]
+    },
+    {
+      "slug": "opencup_localizzazione",
+      "name": "Opencup Localizzazione",
+      "description": "Localizzazione territoriale dei CUP — regione, provincia, comune.",
+      "source": "",
+      "source_id": "opencup",
+      "period": {
+        "start": 1990,
+        "end": 2026
+      },
+      "tags": [
+        "opere",
+        "opencup",
+        "localizzazione",
+        "territorio",
+        "support"
+      ],
+      "category": "support",
+      "columns": [
+        {
+          "name": "cup",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "cup_code"
+        },
+        {
+          "name": "codice_stato",
+          "type": "BIGINT",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "stato",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "country_code"
+        },
+        {
+          "name": "codice_regione",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "region_code"
+        },
+        {
+          "name": "regione",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "region_code"
+        },
+        {
+          "name": "codice_provincia",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "province_code"
+        },
+        {
+          "name": "sigla_provincia",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "province_code"
+        },
+        {
+          "name": "provincia",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "province_code"
+        },
+        {
+          "name": "codice_comune",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "municipality_code"
+        },
+        {
+          "name": "comune",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "municipality_name"
+        }
+      ],
+      "location": {
+        "type": "gcs",
+        "path": "gs://dataciviclab-clean/opere_pubbliche/opencup_localizzazione/2026/opencup_localizzazione_2026_clean.parquet",
+        "multi_file": false
+      },
+      "stage": "incubating",
+      "mart_refs": [
+        "opencup_localizzazione__mart_localizzazione"
+      ]
+    },
+    {
+      "slug": "opencup_progetti",
+      "name": "Opencup Progetti",
+      "description": "Anagrafica OpenCUP — tutti i progetti di investimento pubblico italiano (1990-oggi).",
+      "source": "",
+      "source_id": "opencup",
+      "period": {
+        "start": 1990,
+        "end": 2026
+      },
+      "tags": [
+        "opere",
+        "opencup",
+        "cup",
+        "investimenti-pubblici"
+      ],
+      "category": "appalti",
+      "columns": [
+        {
+          "name": "cup",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": "",
+          "semantic_type": "cup_code"
+        },
+        {
+          "name": "anno_decisione",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "stato_progetto",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "costo_progetto",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "finanziamento_progetto",
+          "type": "DOUBLE",
+          "role": "metric",
+          "description": ""
+        },
+        {
+          "name": "soggetto_titolare",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "piva_soggetto_titolare",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "natura_intervento",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "tipologia_intervento",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "settore_intervento",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "categoria_intervento",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "codice_settore",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "codice_categoria",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "descrizione_intervento",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "codice_locale_progetto",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "data_generazione_cup",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "cup_master",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        }
+      ],
+      "location": {
+        "type": "gcs",
+        "path": "gs://dataciviclab-clean/opere_pubbliche/opencup_progetti/2026/opencup_progetti_2026_clean.parquet",
+        "multi_file": false
+      },
+      "stage": "incubating",
+      "mart_refs": [
+        "opencup_progetti__mart_progetti",
+        "opencup_progetti__mart_opencup"
+      ]
+    },
+    {
+      "slug": "opencup_soggetti",
+      "name": "Opencup Soggetti",
+      "description": "Anagrafiche soggetti titolari e richiedenti dei CUP.",
+      "source": "",
+      "source_id": "opencup",
+      "period": {
+        "start": 1990,
+        "end": 2026
+      },
+      "tags": [
+        "opere",
+        "opencup",
+        "soggetti",
+        "support"
+      ],
+      "category": "support",
+      "columns": [
+        {
+          "name": "soggetto_titolare",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "piva_codfiscale_sog_titolare",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "indirizzo_sog_titolare",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "comune_soggetto_titolare",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "codice_comune_sogg_titolare",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "codice_categoria_soggetto",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "categoria_soggetto",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "codice_area_soggetto",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "area_soggetto",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        },
+        {
+          "name": "soggetto_richiedente",
+          "type": "VARCHAR",
+          "role": "dimension",
+          "description": ""
+        }
+      ],
+      "location": {
+        "type": "gcs",
+        "path": "gs://dataciviclab-clean/opere_pubbliche/opencup_soggetti/2026/opencup_soggetti_2026_clean.parquet",
+        "multi_file": false
+      },
+      "stage": "incubating",
+      "mart_refs": [
+        "opencup_soggetti__mart_soggetti"
+      ]
+    }
+  ],
+  "marts": [
+    {
+      "slug": "op_cup_lab__mart_fonti",
+      "dataset": "op_cup_lab",
+      "table": "mart_fonti",
+      "location": {
+        "type": "gcs",
+        "path": "gs://dataciviclab-mart/opere_pubbliche/op_cup_lab/2026/mart_fonti.parquet",
+        "multi_file": false
+      }
+    },
+    {
+      "slug": "op_cup_lab__mart_territorio",
+      "dataset": "op_cup_lab",
+      "table": "mart_territorio",
+      "location": {
+        "type": "gcs",
+        "path": "gs://dataciviclab-mart/opere_pubbliche/op_cup_lab/2026/mart_territorio.parquet",
+        "multi_file": false
+      }
+    },
+    {
+      "slug": "opencup_fonti__mart_fonti",
+      "dataset": "opencup_fonti",
+      "table": "mart_fonti",
+      "location": {
+        "type": "gcs",
+        "path": "gs://dataciviclab-mart/opere_pubbliche/opencup_fonti/2026/mart_fonti.parquet",
+        "multi_file": false
+      }
+    },
+    {
+      "slug": "opencup_localizzazione__mart_localizzazione",
+      "dataset": "opencup_localizzazione",
+      "table": "mart_localizzazione",
+      "location": {
+        "type": "gcs",
+        "path": "gs://dataciviclab-mart/opere_pubbliche/opencup_localizzazione/2026/mart_localizzazione.parquet",
+        "multi_file": false
+      }
+    },
+    {
+      "slug": "opencup_progetti__mart_opencup",
+      "dataset": "opencup_progetti",
+      "table": "mart_opencup",
+      "location": {
+        "type": "gcs",
+        "path": "gs://dataciviclab-mart/opere_pubbliche/opencup_progetti/2026/mart_opencup.parquet",
+        "multi_file": false
+      }
+    },
+    {
+      "slug": "opencup_progetti__mart_progetti",
+      "dataset": "opencup_progetti",
+      "table": "mart_progetti",
+      "location": {
+        "type": "gcs",
+        "path": "gs://dataciviclab-mart/opere_pubbliche/opencup_progetti/2026/mart_progetti.parquet",
+        "multi_file": false
+      }
+    },
+    {
+      "slug": "opencup_soggetti__mart_soggetti",
+      "dataset": "opencup_soggetti",
+      "table": "mart_soggetti",
+      "location": {
+        "type": "gcs",
+        "path": "gs://dataciviclab-mart/opere_pubbliche/opencup_soggetti/2026/mart_soggetti.parquet",
+        "multi_file": false
+      }
+    }
+  ],
+  "signals": [
+    {
+      "id": "compose:op_cup_lab",
+      "source_id": "dataciviclab_composite",
+      "status": "ok",
+      "label": "op_cup_lab",
+      "detail": "anno 2026 — mart: si",
+      "action": "",
+      "run": {
+        "run_id": "20260912T180643Z_2e3c3527",
+        "year": 2026,
+        "status": "SUCCESS",
+        "quality_score": {
+          "mart": 100
+        },
+        "output_rows": {
+          "mart": 5873
+        },
+        "output_bytes": {
+          "mart": 119735
+        },
+        "started_at": "2026-09-12T18:06:43.593317+00:00",
+        "finished_at": "2026-09-12T18:06:45.329996+00:00",
+        "duration_seconds": 1.737
+      }
+    },
+    {
+      "id": "opencup_progetti",
+      "source_id": "opencup",
+      "status": "ok",
+      "label": "opencup_progetti",
+      "detail": "anno 2026 — mart: si",
+      "action": "",
+      "run": {
+        "run_id": "20260830T235821Z_b818f39b",
+        "year": 2026,
+        "status": "FAILED",
+        "started_at": "2026-08-30T23:58:21.979795+00:00",
+        "finished_at": "2026-08-31T00:04:12.396872+00:00",
+        "duration_seconds": 350.417
+      }
+    },
+    {
+      "id": "opencup_fonti",
+      "source_id": "opencup",
+      "status": "ok",
+      "label": "opencup_fonti",
+      "detail": "anno 2026 — mart: si",
+      "action": "",
+      "run": {
+        "run_id": "20260828T132911Z_00f6615d",
+        "year": 2026,
+        "status": "SUCCESS",
+        "quality_score": {
+          "raw": 100,
+          "clean": 100,
+          "mart": 100
+        },
+        "output_rows": {
+          "raw": 22806427,
+          "clean": 22806427,
+          "mart": 22806427
+        },
+        "output_bytes": {
+          "raw": 820183722,
+          "clean": 150427114,
+          "mart": 143534125
+        },
+        "started_at": "2026-08-28T13:29:11.910135+00:00",
+        "finished_at": "2026-08-28T13:31:43.655294+00:00",
+        "duration_seconds": 151.745
+      }
+    },
+    {
+      "id": "opencup_localizzazione",
+      "source_id": "opencup",
+      "status": "ok",
+      "label": "opencup_localizzazione",
+      "detail": "anno 2026 — mart: si",
+      "action": "",
+      "run": {
+        "run_id": "20260828T133144Z_814caed2",
+        "year": 2026,
+        "status": "SUCCESS",
+        "quality_score": {
+          "raw": 100,
+          "clean": 95,
+          "mart": 100
+        },
+        "output_rows": {
+          "raw": 13595165,
+          "clean": 13595165,
+          "mart": 13595165
+        },
+        "output_bytes": {
+          "raw": 1427864320,
+          "clean": 190749455,
+          "mart": 158218896
+        },
+        "started_at": "2026-08-28T13:31:44.433110+00:00",
+        "finished_at": "2026-08-28T13:36:07.504845+00:00",
+        "duration_seconds": 263.072
+      }
+    },
+    {
+      "id": "opencup_soggetti",
+      "source_id": "opencup",
+      "status": "ok",
+      "label": "opencup_soggetti",
+      "detail": "anno 2026 — mart: si",
+      "action": "",
+      "run": {
+        "run_id": "20260828T133609Z_db8c94d7",
+        "year": 2026,
+        "status": "SUCCESS",
+        "quality_score": {
+          "raw": 100,
+          "clean": 95,
+          "mart": 100
+        },
+        "output_rows": {
+          "raw": 54323,
+          "clean": 54323,
+          "mart": 54323
+        },
+        "output_bytes": {
+          "raw": 17105280,
+          "clean": 2359952,
+          "mart": 2359952
+        },
+        "started_at": "2026-08-28T13:36:09.098169+00:00",
+        "finished_at": "2026-08-28T13:36:14.966481+00:00",
+        "duration_seconds": 5.868
+      }
+    }
+  ],
+  "codelists": [],
+  "entities": {
+    "entities": {
+      "Comune": {
+        "entity": "Comune",
+        "label": "Comune (ISTAT)",
+        "datasets": [
+          {
+            "slug": "op_cup_lab",
+            "name": "Op Cup Lab",
+            "column": "comune",
+            "semantic_type": "municipality_name"
+          },
+          {
+            "slug": "op_cup_lab",
+            "name": "Op Cup Lab",
+            "column": "codice_comune",
+            "semantic_type": "municipality_code"
+          },
+          {
+            "slug": "opencup_localizzazione",
+            "name": "Opencup Localizzazione",
+            "column": "codice_comune",
+            "semantic_type": "municipality_code"
+          },
+          {
+            "slug": "opencup_localizzazione",
+            "name": "Opencup Localizzazione",
+            "column": "comune",
+            "semantic_type": "municipality_name"
+          }
+        ],
+        "types": {
+          "municipality_name": 2,
+          "municipality_code": 2
+        }
+      },
+      "Nazione": {
+        "entity": "Nazione",
+        "label": "Nazione",
+        "datasets": [
+          {
+            "slug": "opencup_localizzazione",
+            "name": "Opencup Localizzazione",
+            "column": "stato",
+            "semantic_type": "country_code"
+          }
+        ],
+        "types": {
+          "country_code": 1
+        }
+      },
+      "Progetto": {
+        "entity": "Progetto",
+        "label": "Progetto",
+        "datasets": [
+          {
+            "slug": "op_cup_lab",
+            "name": "Op Cup Lab",
+            "column": "cup",
+            "semantic_type": "cup_code"
+          },
+          {
+            "slug": "opencup_fonti",
+            "name": "Opencup Fonti",
+            "column": "cup",
+            "semantic_type": "cup_code"
+          },
+          {
+            "slug": "opencup_localizzazione",
+            "name": "Opencup Localizzazione",
+            "column": "cup",
+            "semantic_type": "cup_code"
+          },
+          {
+            "slug": "opencup_progetti",
+            "name": "Opencup Progetti",
+            "column": "cup",
+            "semantic_type": "cup_code"
+          }
+        ],
+        "types": {
+          "cup_code": 4
+        }
+      },
+      "Provincia": {
+        "entity": "Provincia",
+        "label": "Provincia",
+        "datasets": [
+          {
+            "slug": "op_cup_lab",
+            "name": "Op Cup Lab",
+            "column": "provincia",
+            "semantic_type": "province_code"
+          },
+          {
+            "slug": "opencup_localizzazione",
+            "name": "Opencup Localizzazione",
+            "column": "codice_provincia",
+            "semantic_type": "province_code"
+          },
+          {
+            "slug": "opencup_localizzazione",
+            "name": "Opencup Localizzazione",
+            "column": "sigla_provincia",
+            "semantic_type": "province_code"
+          },
+          {
+            "slug": "opencup_localizzazione",
+            "name": "Opencup Localizzazione",
+            "column": "provincia",
+            "semantic_type": "province_code"
+          }
+        ],
+        "types": {
+          "province_code": 4
+        }
+      },
+      "Regione": {
+        "entity": "Regione",
+        "label": "Regione",
+        "datasets": [
+          {
+            "slug": "op_cup_lab",
+            "name": "Op Cup Lab",
+            "column": "regione",
+            "semantic_type": "region_code"
+          },
+          {
+            "slug": "opencup_localizzazione",
+            "name": "Opencup Localizzazione",
+            "column": "codice_regione",
+            "semantic_type": "region_code"
+          },
+          {
+            "slug": "opencup_localizzazione",
+            "name": "Opencup Localizzazione",
+            "column": "regione",
+            "semantic_type": "region_code"
+          }
+        ],
+        "types": {
+          "region_code": 3
+        }
+      }
+    },
+    "bridges": [
+      {
+        "from": {
+          "entity": "Progetto",
+          "dataset": "op_cup_lab",
+          "via": "cup_code"
+        },
+        "to": {
+          "entity": "Comune",
+          "bridge": "anac_cup",
+          "on": "cup",
+          "semantic_type": "municipality_code"
+        }
+      },
+      {
+        "from": {
+          "entity": "Progetto",
+          "dataset": "opencup_fonti",
+          "via": "cup_code"
+        },
+        "to": {
+          "entity": "Comune",
+          "bridge": "anac_cup",
+          "on": "cup",
+          "semantic_type": "municipality_code"
+        }
+      },
+      {
+        "from": {
+          "entity": "Progetto",
+          "dataset": "opencup_localizzazione",
+          "via": "cup_code"
+        },
+        "to": {
+          "entity": "Comune",
+          "bridge": "anac_cup",
+          "on": "cup",
+          "semantic_type": "municipality_code"
+        }
+      },
+      {
+        "from": {
+          "entity": "Progetto",
+          "dataset": "opencup_progetti",
+          "via": "cup_code"
+        },
+        "to": {
+          "entity": "Comune",
+          "bridge": "anac_cup",
+          "on": "cup",
+          "semantic_type": "municipality_code"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,61 @@
+# SILOS — Infrastrutture strategiche e prioritarie (Camera dei Deputati)
+# Fonte: dati.camera.it — CC BY-SA 4.0
+# Report annuale 2024 del Servizio Studi
+
+root: "../../out"
+schema_version: 1
+
+dataset:
+  name: "silos_infrastrutture"
+  source_id: "dati_camera"
+  tags: [opere, silos, infrastrutture, grande-opere]
+  category: appalti
+  description: "Grandi opere pubbliche monitorate da SILOS — costi, stato attuazione, fabbisogno."
+  years: [2024]
+  time_coverage:
+    start_year: 2004
+    end_year: 2024
+
+raw:
+  output_policy: overwrite
+  extractor:
+    type: "unzip_first_csv"
+  sources:
+    - name: "silos_download"
+      type: "script"
+      args:
+        command: "bash scripts/download_silos.sh"
+        filename: "PISRapportoCSV2024.zip"
+        output: "PISRapportoCSV2024.zip"
+      primary: true
+
+clean:
+  sql: "sql/clean.sql"
+  read:
+    source: auto
+    mode: latest
+    delim: ";"
+    encoding: utf-8
+    header: true
+    sample_size: -1
+  required_columns: [sistema_infrastrutturale, denominazione]
+  validate:
+    not_null: [denominazione]
+    min_rows: 1000
+
+mart:
+  tables:
+    - name: "mart_silos"
+      sql: "sql/mart.sql"
+  required_tables: ["mart_silos"]
+  validate:
+    table_rules:
+      mart_silos:
+        not_null: [denominazione]
+        min_rows: 1000
+
+validation:
+  fail_on_error: true
+
+output:
+  artifacts: "standard"

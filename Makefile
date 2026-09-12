@@ -59,10 +59,10 @@ test:
 
 .PHONY: registry registry-write
 registry:
-	$(TOOLKIT) registry build --prefix opere_pubbliche_intelligence --flat
+	$(TOOLKIT) registry build --prefix opere_pubbliche
 
 registry-write:
-	$(TOOLKIT) registry build --prefix opere_pubbliche_intelligence --flat --write
+	$(TOOLKIT) registry build --prefix opere_pubbliche --write
 
 # --- Pulizia -----------------------------------------------------------------
 

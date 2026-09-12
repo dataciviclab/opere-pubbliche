@@ -1,14 +1,9 @@
-"""Smoke test OPI — protegge il contratto del mart e del catalogo query.
+"""Smoke test OPI — protegge il contratto del compose op-cup-lab.
 
-Verifica che il flusso end-to-end sia integro senza eseguire la pipeline:
-- cup_fatti (mart) esiste con le colonne contrattuali e i conteggi attesi;
-- le query del catalogo (queries/) eseguono sugli artefatti giusti;
-- i numeri chiave del panorama sono stabili.
+Verifica che il clean del compose esista con le colonne contrattuali
+e i conteggi attesi.
 
 Marker: smoke
-
-Uso:
-  python3 -m pytest tests/ -v
 """
 
 from __future__ import annotations
@@ -19,49 +14,43 @@ import duckdb
 import pytest
 
 REPO = Path(__file__).resolve().parent.parent
-QUERIES = REPO / "queries"
-CUP = REPO / "data" / "cup" / "cup_fatti.parquet"
-AGG = REPO / "data" / "aggregati"
+CLEAN = REPO / "out" / "data" / "clean" / "op_cup_lab" / "2026" / "op_cup_lab_2026_clean.parquet"
 
-# Colonne contrattuali: se cambiano, aggiorna qui e in docs/data_dictionary.md.
+# Colonne contrattuali minime del clean compose
 REQUIRED_COLUMNS = {
     "cup", "regione", "comune", "soggetto_titolare", "stato_progetto",
-    "costo_progetto", "pnrr_missione", "pnrr_fin_pnrr", "anac_n_cig",
-    "anac_n_gare_piccole", "anac_n_collaudati", "flag_ombrello",
-    "anac_n_cig_b", "anac_importo_cig_b",
+    "costo_progetto", "settore_intervento", "area",
+    "anac_n_cig", "anac_n_gare", "anac_importo_aggiudicato",
+    "pnrr_fin_pnrr", "pnrr_missione",
+    "coe_n_progetti", "flag_ombrello",
+    "con_almeno_una_fonte_lab", "n_fonti_lab",
+    "silos_costi_mln", "silos_macro_stato",
 }
 
 
 @pytest.mark.smoke
 def test_smoke() -> None:
-    """smoke: golden path end-to-end del mart e del catalogo."""
+    """smoke: clean compose esiste e ha le colonne contrattuali."""
     con = duckdb.connect()
     con.execute("SET memory_limit='1GB'")
 
-    # ---- 1. Mart: esiste e ha le colonne contrattuali ----
-    assert CUP.exists(), (
-        "cup_fatti.parquet mancante — esegui: make layers"
+    assert CLEAN.exists(), (
+        "op_cup_lab clean mancante — esegui: TOOLKIT_ALLOW_SCRIPT_SOURCE=1 toolkit run --config compose/op-cup-lab/dataset.yml"
     )
-    cols = {r[0] for r in con.execute(f"DESCRIBE SELECT * FROM read_parquet('{CUP}')").fetchall()}
+
+    cols = {r[0] for r in con.execute(f"DESCRIBE SELECT * FROM read_parquet('{CLEAN}')").fetchall()}
     missing = REQUIRED_COLUMNS - cols
     assert not missing, f"colonne contrattuali mancanti: {sorted(missing)}"
-    n_cup = con.execute(f"SELECT COUNT(*) FROM read_parquet('{CUP}')").fetchone()[0]
+
+    n_cup = con.execute(f"SELECT COUNT(*) FROM read_parquet('{CLEAN}')").fetchone()[0]
     assert n_cup >= 11_000_000, f"n_cup >= 11M (reale: {n_cup:,})"
 
-    # ---- 2. Catalogo query: leggono gli artefatti giusti ed eseguono ----
-    for q in sorted(QUERIES.glob("*.sql")):
-        sql = q.read_text()
-        assert "unified_operas" not in sql, f"{q.name}: non deve usare unified_operas"
-        con.execute(sql).fetchall()
-
-    # ---- 3. Numeri chiave stabili (coerenza mart vs aggregati) ----
-    totali = con.execute(f"""
-        SELECT COUNT(*), SUM(CASE WHEN anac_n_cig > 0 AND NOT flag_ombrello THEN 1 ELSE 0 END)
-        FROM read_parquet('{CUP}')
+    # Copertura Lab minima
+    r = con.execute(f"""
+        SELECT SUM(con_almeno_una_fonte_lab), SUM(CASE WHEN silos_costi_mln IS NOT NULL THEN 1 ELSE 0 END)
+        FROM read_parquet('{CLEAN}')
     """).fetchone()
-    assert totali[0] == n_cup, "COUNT mart stabile"
-    assert totali[1] >= 600_000, f"CUP con gara ANAC >= 600k (reale: {totali[1]:,})"
-    n_comuni = con.execute(f"SELECT COUNT(*) FROM read_parquet('{AGG / 'comune.parquet'}')").fetchone()[0]
-    assert n_comuni >= 8_000, f"n_comuni >= 8000 (reale: {n_comuni:,})"
+    assert r[0] >= 2_500_000, f"copertura Lab >= 2.5M (reale: {r[0]:,})"
+    assert r[1] >= 1_000, f"SILOS >= 1k CUP (reale: {r[1]:,})"
 
     con.close()
