@@ -7,7 +7,6 @@ on:
       - "datasets/**"
       - "support/**"
       - "compose/**"
-      - "scripts/**"
       - ".github/workflows/pipeline.yml"
   schedule:
     - cron: "0 6 1 * *"
@@ -17,72 +16,16 @@ concurrency:
   group: opi-pipeline-${{ github.event.pull_request.number || github.ref || 'schedule' }}
   cancel-in-progress: false
 
-env:
-  GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-  GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-
 jobs:
   pipeline:
     if: github.event.pull_request.merged == true || github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      id-token: write
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.merge_commit_sha || github.ref }}
-          fetch-depth: 0
-
-      - uses: dataciviclab/.github/actions/python-setup@main
-        with:
-          extra-packages: "-r requirements.txt"
-
-      - name: Run datasets
-        env:
-          TOOLKIT_ALLOW_SCRIPT_SOURCE: "1"
-        run: make run-all
-
-      - name: Test
-        run: make test
-
-      - name: Auth GCP
-        if: env.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && env.GCP_SERVICE_ACCOUNT != ''
-        uses: google-github-actions/auth@v3
-        with:
-          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
-
-      - name: Set up gcloud
-        if: env.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && env.GCP_SERVICE_ACCOUNT != ''
-        uses: google-github-actions/setup-gcloud@v3
-
-      - name: Sync to GCS
-        if: env.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && env.GCP_SERVICE_ACCOUNT != ''
-        run: |
-          for slug_dir in out/data/clean/*/; do
-            [ -d "$slug_dir" ] || continue
-            slug=$(basename "$slug_dir")
-            year=$(ls "$slug_dir" 2>/dev/null | sort -rn | head -1)
-            [ -z "$year" ] && echo "No clean for $slug" && continue
-            gsutil -m rsync -r "${slug_dir}${year}/" "gs://dataciviclab-clean/opere_pubbliche/$slug/$year/"
-            echo "$slug clean synced"
-          done
-          for slug_dir in out/data/mart/*/; do
-            [ -d "$slug_dir" ] || continue
-            slug=$(basename "$slug_dir")
-            year=$(ls "$slug_dir" 2>/dev/null | sort -rn | head -1)
-            [ -z "$year" ] && echo "No mart for $slug" && continue
-            gsutil -m rsync -r "${slug_dir}${year}/" "gs://dataciviclab-mart/opere_pubbliche/$slug/$year/"
-            echo "$slug mart synced"
-          done
-
-      - name: Registry update PR
-        uses: dataciviclab/.github/actions/registry-update-pr@main
-        with:
-          prefix: "opere_pubbliche"
-          flat: "true"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    uses: dataciviclab/.github/.github/workflows/pipeline-reusable.yml@main
+    with:
+      repo-slug: "opere_pubbliche"
+      run-command: "make run-all"
+      sync-pattern: "per-dataset"
+      python-extra-packages: "-r requirements.txt"
+      extra-env: "TOOLKIT_ALLOW_SCRIPT_SOURCE=1"
+    secrets:
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}

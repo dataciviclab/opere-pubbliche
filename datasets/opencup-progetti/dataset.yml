@@ -16,9 +16,11 @@ raw:
   output_policy: overwrite
   sources:
     - name: "opencup_progetti"
-      type: "local_file"
+      type: "script"
       args:
-        path: "../../opencup/data/parquet/opencup_progetti.parquet"
+        command: "python3 datasets/opencup-progetti/scripts/fetch_progetti.py"
+        filename: "opencup_progetti.parquet"
+        output: "opencup_progetti.parquet"
       primary: true
 
 clean:

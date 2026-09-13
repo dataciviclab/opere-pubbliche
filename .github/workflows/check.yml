@@ -44,16 +44,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dataciviclab/.github/actions/python-setup@main
       - name: Install dev dependencies
-        run: pip install -r requirements.txt && pip install ruff pytest
+        run: pip install -r requirements.txt && pip install ruff pytest pyyaml
       - name: Lint
         run: ruff check .
-
-  contract-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dataciviclab/.github/actions/python-setup@main
-      - name: Install dev dependencies
-        run: pip install -r requirements.txt && pip install pytest pyyaml
       - name: Contract test
         run: python -m pytest tests/test_contract.py -v -m contract
+
+  lint-workflows:
+    uses: dataciviclab/.github/.github/workflows/lint-workflows-reusable.yml@main

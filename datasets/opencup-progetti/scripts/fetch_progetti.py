@@ -1,14 +1,13 @@
 """Fetch, extract e merge dei 7 shard OpenCUP Progetti in un singolo parquet.
 
-Output: out/data/raw/opencup_progetti/2026/opencup_progetti.parquet
-Toolkit legge da qui come local_file.
+Output: opencup_progetti.parquet (nella directory corrente)
+Toolkit legge da qui come script source.
 
-Uso: python opencup/scripts/fetch_progetti.py [--force]
+Uso: python3 datasets/opencup-progetti/scripts/fetch_progetti.py
 """
 
 from __future__ import annotations
 
-import argparse
 import re
 import sys
 import zipfile
@@ -16,8 +15,6 @@ from pathlib import Path
 
 import duckdb
 
-REPO = Path(__file__).resolve().parent.parent.parent
-ZIP_DIR = REPO / "opencup" / "data" / "raw"
 PAGE_URL = "https://www.opencup.gov.it/portale/web/opencup/accesso-agli-open-data"
 BASE_URL = "https://www.opencup.gov.it"
 ZIP_NAME = "OpendataProgetti.zip"
@@ -64,14 +61,8 @@ def download_zip(url: str, dest: Path) -> None:
     print(f"ok: {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)")
 
 
-def merge_to_parquet(zip_path: Path, out_dir: Path) -> None:
+def merge_to_parquet(zip_path: Path, out_path: Path) -> None:
     """Estrae i 7 CSV dal ZIP e li merge in un singolo parquet."""
-    out_dir.mkdir(parents=True, exist_ok=True)
-    target = out_dir / "opencup_progetti.parquet"
-    if target.exists() and target.stat().st_size > 100_000_000:
-        print(f"skip (esiste): {target.name} ({target.stat().st_size / 1e9:.2f} GB)")
-        return
-
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
@@ -93,32 +84,37 @@ def merge_to_parquet(zip_path: Path, out_dir: Path) -> None:
                     delim=';', header=true, encoding='utf-8',
                     all_varchar=true
                 )
-            ) TO '{target}' (FORMAT parquet, COMPRESSION zstd)
+            ) TO '{out_path}' (FORMAT parquet, COMPRESSION zstd)
         """)
-        n = con.execute(f"SELECT COUNT(*) FROM read_parquet('{target}')").fetchone()[0]
+        n = con.execute(f"SELECT COUNT(*) FROM read_parquet('{out_path}')").fetchone()[0]
         con.close()
-        print(f"ok: {n:,} righe → {target} ({target.stat().st_size / 1e9:.2f} GB)")
+        print(f"ok: {n:,} righe → {out_path} ({out_path.stat().st_size / 1e9:.2f} GB)")
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--force", action="store_true")
-    ap.parse_args()
+    out_path = Path("opencup_progetti.parquet")
 
-    zip_dir = REPO / "opencup" / "data" / "raw"
-    zip_dir.mkdir(parents=True, exist_ok=True)
-    zip_path = zip_dir / ZIP_NAME
+    # Skip se già esiste
+    if out_path.exists() and out_path.stat().st_size > 100_000_000:
+        print(f"skip (esiste): {out_path.name} ({out_path.stat().st_size / 1e9:.2f} GB)")
+        return
 
-    print("1. fetch URL dalla pagina Liferay ...")
-    url = fetch_url()
-    print(f"   {url}\n")
+    # Download ZIP in directory temporanea
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        zip_path = Path(tmp) / ZIP_NAME
 
-    print("2. download ZIP ...")
-    download_zip(url, zip_path)
-    print()
+        print("1. fetch URL dalla pagina Liferay ...")
+        url = fetch_url()
+        print(f"   {url}\n")
 
-    print("3. merge shard → parquet ...")
-    merge_to_parquet(zip_path, Path.cwd())
+        print("2. download ZIP ...")
+        download_zip(url, zip_path)
+        print()
+
+        print("3. merge shard → parquet ...")
+        merge_to_parquet(zip_path, out_path)
+
     print("\nfatto.")
 
 
