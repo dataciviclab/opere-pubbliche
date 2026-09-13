@@ -3,18 +3,18 @@
 Output: opencup_progetti.parquet (nella directory corrente)
 Toolkit legge da qui come script source.
 
-Usa lab_connectors.http.download() che gestisce automaticamente:
-- retry + backoff
-- proxy via BLOCKED_SOURCE_PROXY (fallback su 403/407/timeout)
-- TLS fallback
+Supporta:
+- Resume del download con curl -C - (riprende da dove era)
+- Proxy via BLOCKED_SOURCE_PROXY (se configurato)
+- Timeout configurabile (default 3600s)
 
 Uso: python3 scripts/fetch_progetti.py
 """
 
 from __future__ import annotations
 
-import os
 import re
+import subprocess
 import sys
 import zipfile
 from pathlib import Path
@@ -43,16 +43,35 @@ def fetch_url() -> str:
 
 
 def download_zip(url: str, dest: Path) -> None:
-    """Scarica lo ZIP se non esiste."""
-    if dest.exists() and dest.stat().st_size > 1_000_000:
+    """Scarica lo ZIP con resume (curl -C -)."""
+    import os
+    proxy = os.environ.get("BLOCKED_SOURCE_PROXY", "")
+
+    cmd = [
+        "curl", "-sSL", "--fail",
+        "--retry", "3", "--retry-delay", "5",
+        "-C", "-",  # resume
+        "-H", f"User-Agent: {UA}",
+        "-o", str(dest),
+    ]
+    if proxy:
+        cmd.extend(["-x", proxy])
+
+    cmd.append(url)
+
+    # Se il file esiste già e sembra completo, skip
+    if dest.exists() and dest.stat().st_size > 100_000_000:
         print(f"skip (esiste): {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)")
         return
-    from lab_connectors.http import download
+
     print(f"download: {dest.name} ...")
-    data = download(url, timeout=3600, user_agent=UA)
-    tmp = dest.with_suffix(".part")
-    tmp.write_bytes(data)
-    tmp.rename(dest)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        # Se il file parziale esiste, fallo vedere
+        if dest.exists():
+            print(f"parziale: {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)")
+        sys.exit(f"download fallito (exit {result.returncode}): {result.stderr[:200]}")
+
     print(f"ok: {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)")
 
 
@@ -93,11 +112,10 @@ def main() -> None:
         print(f"skip (esiste): {out_path.name} ({out_path.stat().st_size / 1e9:.2f} GB)")
         return
 
+    import os
     proxy = os.environ.get("BLOCKED_SOURCE_PROXY", "")
     if proxy:
         print(f"proxy: {proxy[:50]}...")
-    else:
-        print("⚠️  BLOCKED_SOURCE_PROXY non configurato — download diretto")
 
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
@@ -107,7 +125,7 @@ def main() -> None:
         url = fetch_url()
         print(f"   {url}\n")
 
-        print("2. download ZIP ...")
+        print("2. download ZIP (resume-friendly) ...")
         download_zip(url, zip_path)
         print()
 
