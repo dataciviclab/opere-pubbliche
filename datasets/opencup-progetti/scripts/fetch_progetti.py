@@ -3,11 +3,17 @@
 Output: opencup_progetti.parquet (nella directory corrente)
 Toolkit legge da qui come script source.
 
-Uso: python3 datasets/opencup-progetti/scripts/fetch_progetti.py
+Usa lab_connectors.http.download() che gestisce automaticamente:
+- retry + backoff
+- proxy via BLOCKED_SOURCE_PROXY (fallback su 403/407/timeout)
+- TLS fallback
+
+Uso: python3 scripts/fetch_progetti.py
 """
 
 from __future__ import annotations
 
+import os
 import re
 import sys
 import zipfile
@@ -23,20 +29,12 @@ UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
 )
-HEADERS = {
-    "Accept": "text/html,application/xhtml+xml",
-    "Accept-Language": "it-IT,it;q=0.9",
-}
 
 
 def fetch_url() -> str:
     """Estrae l'URL corrente del ZIP Progetti dalla pagina Liferay."""
-    from lab_connectors.http import HttpClient
-    client = HttpClient(timeout=30, max_retries=2, user_agent=UA)
-    page = client.get(PAGE_URL, headers=HEADERS)
-    if page.response is None or page.response.status_code != 200:
-        sys.exit(f"pagina non raggiungibile: HTTP {page.response.status_code if page.response else 'no response'}")
-    html = page.response.content.decode("utf-8", errors="replace")
+    from lab_connectors.http import download
+    html = download(PAGE_URL, timeout=30, user_agent=UA).decode("utf-8", errors="replace")
     pattern = re.compile(r'href="(/portale/documents/[^"]*?OpendataProgetti\.zip/[^"]*)"')
     match = pattern.search(html)
     if not match:
@@ -49,14 +47,11 @@ def download_zip(url: str, dest: Path) -> None:
     if dest.exists() and dest.stat().st_size > 1_000_000:
         print(f"skip (esiste): {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)")
         return
-    from lab_connectors.http import HttpClient
-    client = HttpClient(timeout=600, max_retries=2, user_agent=UA)
+    from lab_connectors.http import download
     print(f"download: {dest.name} ...")
-    result = client.get(url, headers=HEADERS)
-    if result.response is None or result.response.status_code != 200:
-        sys.exit(f"download fallito: HTTP {result.response.status_code if result.response else 'no response'}")
+    data = download(url, timeout=3600, user_agent=UA)
     tmp = dest.with_suffix(".part")
-    tmp.write_bytes(result.response.content)
+    tmp.write_bytes(data)
     tmp.rename(dest)
     print(f"ok: {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)")
 
@@ -94,12 +89,16 @@ def merge_to_parquet(zip_path: Path, out_path: Path) -> None:
 def main() -> None:
     out_path = Path("opencup_progetti.parquet")
 
-    # Skip se già esiste
     if out_path.exists() and out_path.stat().st_size > 100_000_000:
         print(f"skip (esiste): {out_path.name} ({out_path.stat().st_size / 1e9:.2f} GB)")
         return
 
-    # Download ZIP in directory temporanea
+    proxy = os.environ.get("BLOCKED_SOURCE_PROXY", "")
+    if proxy:
+        print(f"proxy: {proxy[:50]}...")
+    else:
+        print("⚠️  BLOCKED_SOURCE_PROXY non configurato — download diretto")
+
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
         zip_path = Path(tmp) / ZIP_NAME
