@@ -1,5 +1,6 @@
 -- clean.sql — Compose op-cup-lab: 1 riga per CUP con tutti gli attributi
--- Ottimizzato: niente JOIN esterni, tutto da parquet locali
+-- Dataset del repo: {support.name.clean} / {support.name.mart}
+-- Dataset esterni: GCS paths
 
 WITH
 loc AS (
@@ -11,7 +12,7 @@ loc AS (
                 CASE WHEN stato = 'ITALIA' THEN 0 ELSE 1 END,
                 comune
             ) AS rn
-        FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/opere-pubbliche/out/data/clean/opencup_localizzazione/2026/opencup_localizzazione_2026_clean.parquet')
+        FROM read_parquet('{support.localizzazione.clean}')
     ) WHERE rn = 1
 ),
 
@@ -22,14 +23,14 @@ fonti AS (
            SUM(CASE WHEN copertura_finanziaria = 'COMUNITARIA' THEN 1 ELSE 0 END) > 0 AS ha_fonte_ue,
            SUM(CASE WHEN copertura_finanziaria = 'REGIONALE' THEN 1 ELSE 0 END) > 0 AS ha_fonte_regionale,
            SUM(CASE WHEN copertura_finanziaria = 'PRIVATA' THEN 1 ELSE 0 END) > 0 AS ha_fonte_privata
-    FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/opere-pubbliche/out/data/clean/opencup_fonti/2026/opencup_fonti_2026_clean.parquet')
+    FROM read_parquet('{support.fonti.clean}')
     GROUP BY cup
 ),
 
 pnrr AS (
     SELECT cup, missione AS pnrr_missione, stato_avanzamento AS pnrr_stato_avanzamento,
            fin_pnrr AS pnrr_fin_pnrr, fin_totale AS pnrr_fin_totale
-    FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/incubation/dataset-incubator/out/data/clean/pnrr_progetti/2026/pnrr_progetti_2026_clean.parquet')
+    FROM read_parquet('gs://dataciviclab-clean/pnrr_progetti/2026/pnrr_progetti_2026_clean.parquet')
     WHERE cup IS NOT NULL AND TRIM(cup) != ''
     QUALIFY ROW_NUMBER() OVER (PARTITION BY cup ORDER BY fin_pnrr DESC) = 1
 ),
@@ -37,7 +38,7 @@ pnrr AS (
 pnrr_gare AS (
     SELECT cup, COUNT(*) AS pnrr_n_gare,
            SUM(COALESCE(importo_aggiudicazione, 0)) AS pnrr_importo_aggiudicato
-    FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/incubation/dataset-incubator/out/data/clean/pnrr_gare/2026/pnrr_gare_2026_clean.parquet')
+    FROM read_parquet('gs://dataciviclab-clean/pnrr_gare/2026/pnrr_gare_2026_clean.parquet')
     WHERE cup IS NOT NULL AND TRIM(cup) != ''
     GROUP BY cup
 ),
@@ -45,7 +46,7 @@ pnrr_gare AS (
 pnrr_pagamenti AS (
     SELECT cup, SUM(COALESCE(pagamento_pnrr, 0)) AS pag_pagato_pnrr,
            SUM(COALESCE(pagamento_totale, 0)) AS pag_pagato_totale
-    FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/incubation/dataset-incubator/out/data/clean/pnrr_pagamenti/2026/pnrr_pagamenti_2026_clean.parquet')
+    FROM read_parquet('gs://dataciviclab-clean/pnrr_pagamenti/2026/pnrr_pagamenti_2026_clean.parquet')
     WHERE cup IS NOT NULL AND TRIM(cup) != ''
     GROUP BY cup
 ),
@@ -57,16 +58,15 @@ anac AS (
            SUM(n_sal) AS anac_n_sal,
            SUM(importo_totale_sal) AS anac_importo_sal,
            MAX(data_ultima_agg) AS anac_data_ultima_agg
-    FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/appalti-pubblici/out/data/clean/anac_cross/2026/anac_cross_2026_clean.parquet')
+    FROM read_parquet('gs://dataciviclab-clean/appalti_pubblici/anac_cross/2026/anac_cross_2026_clean.parquet')
     WHERE cup IS NOT NULL AND cup NOT IN ('ND', '000000000000000', '') AND TRIM(cup) != ''
     GROUP BY cup
 ),
 
--- SAL in ritardo: usa cup da anac_cross, conta da SAL grezzo
 sal_ritardo AS (
     SELECT a.cup, COUNT(*) AS n_ritardo
-    FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/appalti-pubblici/out/data/clean/anac_stati_avanzamento/2026/anac_stati_avanzamento_2026_clean.parquet') s
-    JOIN read_parquet('/home/gabry/dev/dataciviclab-workspace/appalti-pubblici/out/data/clean/anac_cross/2026/anac_cross_2026_clean.parquet') a ON s.cig = a.cig
+    FROM read_parquet('gs://dataciviclab-clean/appalti_pubblici/anac_stati_avanzamento/2026/anac_stati_avanzamento_2026_clean.parquet') s
+    JOIN read_parquet('gs://dataciviclab-clean/appalti_pubblici/anac_cross/2026/anac_cross_2026_clean.parquet') a ON s.cig = a.cig
     WHERE s.flag_ritardo = 'IN RITARDO' AND a.cup IS NOT NULL AND TRIM(a.cup) != ''
     GROUP BY a.cup
 ),
@@ -74,7 +74,7 @@ sal_ritardo AS (
 opencoesione AS (
     SELECT CUP AS cup, COUNT(*) AS coe_n_progetti,
            SUM(COALESCE(FINANZ_TOTALE_PUBBLICO, 0)) AS coe_finanz_tot_pubblico
-    FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/incubation/dataset-incubator/out/data/clean/opencoesione_progetti/2026/opencoesione_progetti_2026_clean.parquet')
+    FROM read_parquet('gs://dataciviclab-clean/opencoesione_progetti/2026/opencoesione_progetti_2026_clean.parquet')
     WHERE CUP IS NOT NULL AND TRIM(CUP) != ''
     GROUP BY CUP
 ),
@@ -86,7 +86,7 @@ silos AS (
            costi_mln_euro AS silos_costi_mln,
            disponibilita_mln_euro AS silos_disponibilita_mln,
            gap_finanziario_mln_euro AS silos_gap_mln
-    FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/opere-pubbliche/out/data/mart/silos_infrastrutture/2024/mart_silos.parquet')
+    FROM read_parquet('{support.silos.mart}')
     WHERE cup IS NOT NULL AND TRIM(cup) != ''
     QUALIFY ROW_NUMBER() OVER (PARTITION BY cup ORDER BY costi_mln_euro DESC NULLS LAST) = 1
 )
