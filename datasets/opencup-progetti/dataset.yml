@@ -18,7 +18,7 @@ raw:
     - name: "opencup_progetti"
       type: "script"
       args:
-        command: "python3 datasets/opencup-progetti/scripts/fetch_progetti.py"
+        command: "python3 scripts/fetch_progetti.py"
         filename: "opencup_progetti.parquet"
         output: "opencup_progetti.parquet"
       primary: true
