@@ -35,6 +35,7 @@ sett = query("""
 """)
 fig = px.bar(sett, x="settore_intervento", y="pct",
              labels={"pct": "% con ANAC", "settore_intervento": "Settore"})
+fig.update_layout(height=400, xaxis_tickangle=-45)
 st.plotly_chart(fig, width="stretch")
 
 # ── Dettaglio fonti per settore × area ───────────────────────────

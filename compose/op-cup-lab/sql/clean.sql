@@ -1,6 +1,5 @@
 -- clean.sql — Compose op-cup-lab: 1 riga per CUP con tutti gli attributi
--- Anagrafe OpenCUP + localizzazione + fonti + Lab (PNRR, ANAC cross, OpenCoesione)
--- Raw input: mart_progetti (11.9M righe)
+-- Ottimizzato: niente JOIN esterni, tutto da parquet locali
 
 WITH
 loc AS (
@@ -28,161 +27,88 @@ fonti AS (
 ),
 
 pnrr AS (
-    SELECT
-        cup,
-        missione AS pnrr_missione,
-        descrizione_missione AS pnrr_descrizione_missione,
-        amministrazione_titolare AS pnrr_amministrazione_titolare,
-        stato_avanzamento AS pnrr_stato_avanzamento,
-        fin_pnrr AS pnrr_fin_pnrr,
-        fin_totale AS pnrr_fin_totale
+    SELECT cup, missione AS pnrr_missione, stato_avanzamento AS pnrr_stato_avanzamento,
+           fin_pnrr AS pnrr_fin_pnrr, fin_totale AS pnrr_fin_totale
     FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/incubation/dataset-incubator/out/data/clean/pnrr_progetti/2026/pnrr_progetti_2026_clean.parquet')
     WHERE cup IS NOT NULL AND TRIM(cup) != ''
     QUALIFY ROW_NUMBER() OVER (PARTITION BY cup ORDER BY fin_pnrr DESC) = 1
 ),
 
 pnrr_gare AS (
-    SELECT
-        cup,
-        COUNT(*) AS pnrr_n_gare,
-        SUM(CASE WHEN cig IS NOT NULL AND TRIM(cig) != '' THEN 1 ELSE 0 END) AS pnrr_n_gare_con_cig,
-        SUM(COALESCE(importo_aggiudicazione, 0)) AS pnrr_importo_aggiudicato
+    SELECT cup, COUNT(*) AS pnrr_n_gare,
+           SUM(COALESCE(importo_aggiudicazione, 0)) AS pnrr_importo_aggiudicato
     FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/incubation/dataset-incubator/out/data/clean/pnrr_gare/2026/pnrr_gare_2026_clean.parquet')
     WHERE cup IS NOT NULL AND TRIM(cup) != ''
     GROUP BY cup
 ),
 
 pnrr_pagamenti AS (
-    SELECT
-        cup,
-        SUM(COALESCE(finanziamento_pnrr, 0)) AS pag_fin_pnrr,
-        SUM(COALESCE(pagamento_pnrr, 0)) AS pag_pagato_pnrr,
-        SUM(COALESCE(pagamento_totale, 0)) AS pag_pagato_totale,
-        CASE WHEN SUM(COALESCE(finanziamento_pnrr, 0)) > 0
-             THEN ROUND(SUM(COALESCE(pagamento_pnrr, 0)) * 100.0 / SUM(COALESCE(finanziamento_pnrr, 0)), 1)
-             ELSE 0 END AS pag_assorbimento_pct
+    SELECT cup, SUM(COALESCE(pagamento_pnrr, 0)) AS pag_pagato_pnrr,
+           SUM(COALESCE(pagamento_totale, 0)) AS pag_pagato_totale
     FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/incubation/dataset-incubator/out/data/clean/pnrr_pagamenti/2026/pnrr_pagamenti_2026_clean.parquet')
     WHERE cup IS NOT NULL AND TRIM(cup) != ''
     GROUP BY cup
 ),
 
--- ANAC: aggrega anac_cross a livello CUP
 anac AS (
-    SELECT
-        cup,
-        COUNT(DISTINCT cig) AS anac_n_cig,
-        SUM(n_aggiudicazioni) AS anac_n_gare,
-        SUM(importo_totale_agg) AS anac_importo_aggiudicato,
-        SUM(CASE WHEN esito_collaudo IS NOT NULL AND esito_collaudo != '' THEN 1 ELSE 0 END) AS anac_n_collaudati,
-        SUM(n_sal) AS anac_n_sal,
-        SUM(importo_totale_sal) AS anac_importo_sal,
-        SUM(sal_in_ritardo) AS anac_sal_in_ritardo,
-        MAX(data_ultima_agg) AS anac_data_ultima_agg
+    SELECT cup, COUNT(DISTINCT cig) AS anac_n_cig,
+           SUM(n_aggiudicazioni) AS anac_n_gare,
+           SUM(importo_totale_agg) AS anac_importo_aggiudicato,
+           SUM(n_sal) AS anac_n_sal,
+           SUM(importo_totale_sal) AS anac_importo_sal,
+           MAX(data_ultima_agg) AS anac_data_ultima_agg
     FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/appalti-pubblici/out/data/clean/anac_cross/2026/anac_cross_2026_clean.parquet')
-    WHERE cup IS NOT NULL AND cup NOT IN ('ND', '000000000000000', '')
-      AND TRIM(cup) != ''
+    WHERE cup IS NOT NULL AND cup NOT IN ('ND', '000000000000000', '') AND TRIM(cup) != ''
     GROUP BY cup
 ),
 
 opencoesione AS (
-    SELECT
-        CUP AS cup,
-        COUNT(*) AS coe_n_progetti,
-        SUM(COALESCE(FINANZ_TOTALE_PUBBLICO, 0)) AS coe_finanz_tot_pubblico,
-        SUM(COALESCE(TOT_PAGAMENTI, 0)) AS coe_pagamenti
+    SELECT CUP AS cup, COUNT(*) AS coe_n_progetti,
+           SUM(COALESCE(FINANZ_TOTALE_PUBBLICO, 0)) AS coe_finanz_tot_pubblico
     FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/incubation/dataset-incubator/out/data/clean/opencoesione_progetti/2026/opencoesione_progetti_2026_clean.parquet')
     WHERE CUP IS NOT NULL AND TRIM(CUP) != ''
     GROUP BY CUP
 ),
 
--- SILOS: macro-opere con costi e stato attuazione
 silos AS (
-    SELECT
-        cup,
-        denominazione AS silos_denominazione,
-        sistema_infrastrutturale AS silos_sistema,
-        stato_attuazione AS silos_stato,
-        macro_stato AS silos_macro_stato,
-        costi_mln_euro AS silos_costi_mln,
-        disponibilita_mln_euro AS silos_disponibilita_mln,
-        fabbisogno_mln_euro AS silos_fabbisogno_mln,
-        gap_finanziario_mln_euro AS silos_gap_mln
+    SELECT cup, denominazione AS silos_denominazione,
+           sistema_infrastrutturale AS silos_sistema,
+           stato_attuazione AS silos_stato, macro_stato AS silos_macro_stato,
+           costi_mln_euro AS silos_costi_mln,
+           disponibilita_mln_euro AS silos_disponibilita_mln,
+           gap_finanziario_mln_euro AS silos_gap_mln
     FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/opere-pubbliche/out/data/mart/silos_infrastrutture/2024/mart_silos.parquet')
     WHERE cup IS NOT NULL AND TRIM(cup) != ''
     QUALIFY ROW_NUMBER() OVER (PARTITION BY cup ORDER BY costi_mln_euro DESC NULLS LAST) = 1
 )
 
 SELECT
-    -- Anagrafe
-    p.cup,
-    p.anno_decisione,
-    p.stato_progetto,
-    p.costo_progetto,
-    p.costo_mld,
-    p.finanziamento_progetto,
-    p.soggetto_titolare,
-    p.piva_soggetto_titolare,
-    p.natura_intervento,
-    p.tipologia_intervento,
-    p.settore_intervento,
-    p.categoria_intervento,
-    p.codice_settore,
-    p.codice_categoria,
-    p.descrizione_intervento,
-    p.codice_locale_progetto,
-    p.data_generazione_cup,
-    p.cup_master,
-    p.flag_chiuso,
-    p.flag_sub_progetto,
-    -- Localizzazione
-    l.regione,
-    l.provincia,
-    l.comune,
-    l.codice_comune,
-    -- Fonti OpenCUP
+    p.cup, p.anno_decisione, p.stato_progetto, p.costo_progetto, p.costo_mld,
+    p.finanziamento_progetto, p.soggetto_titolare, p.settore_intervento,
+    p.descrizione_intervento, p.flag_chiuso, p.flag_sub_progetto,
+    l.regione, l.provincia, l.comune,
     COALESCE(f.n_fonti, 0) AS n_fonti,
     COALESCE(f.ha_fonte_statale, false) AS ha_fonte_statale,
     COALESCE(f.ha_fonte_ue, false) AS ha_fonte_ue,
     COALESCE(f.ha_fonte_regionale, false) AS ha_fonte_regionale,
     COALESCE(f.ha_fonte_privata, false) AS ha_fonte_privata,
-    -- PNRR
-    pnrr.pnrr_missione,
-    pnrr.pnrr_descrizione_missione,
-    pnrr.pnrr_amministrazione_titolare,
-    pnrr.pnrr_stato_avanzamento,
+    pnrr.pnrr_missione, pnrr.pnrr_stato_avanzamento,
     COALESCE(pnrr.pnrr_fin_pnrr, 0) AS pnrr_fin_pnrr,
     COALESCE(pnrr.pnrr_fin_totale, 0) AS pnrr_fin_totale,
     COALESCE(pnrr_gare.pnrr_n_gare, 0) AS pnrr_n_gare,
-    COALESCE(pnrr_gare.pnrr_n_gare_con_cig, 0) AS pnrr_n_gare_con_cig,
     COALESCE(pnrr_gare.pnrr_importo_aggiudicato, 0) AS pnrr_importo_aggiudicato,
-    COALESCE(pnrr_pagamenti.pag_fin_pnrr, 0) AS pag_fin_pnrr,
     COALESCE(pnrr_pagamenti.pag_pagato_pnrr, 0) AS pag_pagato_pnrr,
     COALESCE(pnrr_pagamenti.pag_pagato_totale, 0) AS pag_pagato_totale,
-    COALESCE(pnrr_pagamenti.pag_assorbimento_pct, 0) AS pag_assorbimento_pct,
-    -- ANAC (da anac_cross)
     COALESCE(a.anac_n_cig, 0) AS anac_n_cig,
     COALESCE(a.anac_n_gare, 0) AS anac_n_gare,
     COALESCE(a.anac_importo_aggiudicato, 0) AS anac_importo_aggiudicato,
-    COALESCE(a.anac_n_collaudati, 0) AS anac_n_collaudati,
     COALESCE(a.anac_n_sal, 0) AS anac_n_sal,
     COALESCE(a.anac_importo_sal, 0) AS anac_importo_sal,
-    COALESCE(a.anac_sal_in_ritardo, 0) AS anac_sal_in_ritardo,
-    a.anac_data_ultima_agg,
     CASE WHEN COALESCE(a.anac_n_cig, 0) >= 50 THEN true ELSE false END AS flag_ombrello,
-    -- OpenCoesione
     COALESCE(oc.coe_n_progetti, 0) AS coe_n_progetti,
     COALESCE(oc.coe_finanz_tot_pubblico, 0) AS coe_finanz_tot_pubblico,
-    COALESCE(oc.coe_pagamenti, 0) AS coe_pagamenti,
-    -- SILOS
-    s.silos_denominazione,
-    s.silos_sistema,
-    s.silos_stato,
-    s.silos_macro_stato,
-    s.silos_costi_mln,
-    s.silos_disponibilita_mln,
-    s.silos_fabbisogno_mln,
-    s.silos_gap_mln,
-    -- Derivate
+    s.silos_denominazione, s.silos_sistema, s.silos_stato, s.silos_macro_stato,
+    s.silos_costi_mln, s.silos_disponibilita_mln, s.silos_gap_mln,
     CASE
         WHEN l.regione IN ('LOMBARDIA','PIEMONTE','VENETO','EMILIA-ROMAGNA','TOSCANA','LIGURIA',
                            'FRIULI VENEZIA GIULIA','TRENTINO-ALTO ADIGE','VALLE D''AOSTA') THEN 'NORD'

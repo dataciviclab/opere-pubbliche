@@ -49,8 +49,12 @@ gap = query("""
     SELECT silos_denominazione AS denominazione, silos_gap_mln, cup, silos_sistema, silos_costi_mln
     FROM clean_input WHERE silos_gap_mln > 0 ORDER BY silos_gap_mln DESC LIMIT 15
 """)
-fig = px.bar(gap, x="denominazione", y="silos_gap_mln",
-             labels={"silos_gap_mln": "Gap (mln €)", "denominazione": "Opera"})
+# Trunca nomi lunghi per leggibilità
+gap["opera"] = gap["denominazione"].apply(lambda x: x[:50] + "..." if len(str(x)) > 50 else x)
+fig = px.bar(gap, x="opera", y="silos_gap_mln",
+             hover_data=["cup", "silos_sistema", "silos_costi_mln"],
+             labels={"silos_gap_mln": "Gap (mln €)", "opera": "Opera"})
+fig.update_layout(xaxis_tickangle=-45, height=500)
 st.plotly_chart(fig, width="stretch")
 
 # ── Stato attuazione ─────────────────────────────────────────────
@@ -72,4 +76,5 @@ sistema = query("""
 fig = px.bar(sistema, x="silos_sistema", y="costo",
              hover_data=["n_opere", "gap"],
              labels={"costo": "Costo (mln €)", "silos_sistema": "Sistema"})
+fig.update_layout(height=400)
 st.plotly_chart(fig, width="stretch")

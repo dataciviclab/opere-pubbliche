@@ -15,6 +15,7 @@ reg = query("""
 """)
 fig = px.bar(reg.head(15), x="regione", y="costo",
              labels={"costo": "Costo (€)", "regione": "Regione"})
+fig.update_layout(height=400)
 st.plotly_chart(fig, width="stretch")
 
 # ── Dettaglio regione ────────────────────────────────────────────
