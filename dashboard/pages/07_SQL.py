@@ -11,7 +11,7 @@ registry = load_registry(
 
 render_sql_query(
     registry=registry,
-    prefix="opere_pubbliche_intelligence/",
+    prefix="opere_pubbliche/",
     default_slug="op_cup_lab",
     title="🧪 Query SQL",
     description="Interroga direttamente i dati. Scrivi SQL su ``clean_input``.",

@@ -2,12 +2,18 @@
 """CUP Intelligence · Dashboard Streamlit"""
 
 import streamlit as st
+from lab_connectors.branding import apply_branding
 
 st.set_page_config(
     page_title="CUP Intelligence · Dashboard",
     page_icon="🏗️",
     layout="wide",
     initial_sidebar_state="expanded",
+)
+
+apply_branding(
+    repo_name="opere-pubbliche",
+    repo_url="https://github.com/dataciviclab/opere-pubbliche",
 )
 
 pages = {
@@ -27,11 +33,4 @@ pages = {
 }
 
 pg = st.navigation(pages, position="sidebar")
-
-st.sidebar.markdown("---")
-st.sidebar.caption("Fonte: OpenCUP + ANAC + PNRR + OpenCoesione + SILOS")
-st.sidebar.caption(
-    "Codice: [dataciviclab/opere-pubbliche](https://github.com/dataciviclab/opere-pubbliche)"
-)
-
 pg.run()

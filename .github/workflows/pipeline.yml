@@ -67,7 +67,7 @@ jobs:
             slug=$(basename "$slug_dir")
             year=$(ls "$slug_dir" 2>/dev/null | sort -rn | head -1)
             [ -z "$year" ] && echo "No clean for $slug" && continue
-            gsutil -m rsync -r "${slug_dir}${year}/" "gs://dataciviclab-clean/opere_pubbliche_intelligence/$slug/$year/"
+            gsutil -m rsync -r "${slug_dir}${year}/" "gs://dataciviclab-clean/opere_pubbliche/$slug/$year/"
             echo "$slug clean synced"
           done
           for slug_dir in out/data/mart/*/; do
@@ -75,14 +75,14 @@ jobs:
             slug=$(basename "$slug_dir")
             year=$(ls "$slug_dir" 2>/dev/null | sort -rn | head -1)
             [ -z "$year" ] && echo "No mart for $slug" && continue
-            gsutil -m rsync -r "${slug_dir}${year}/" "gs://dataciviclab-mart/opere_pubbliche_intelligence/$slug/$year/"
+            gsutil -m rsync -r "${slug_dir}${year}/" "gs://dataciviclab-mart/opere_pubbliche/$slug/$year/"
             echo "$slug mart synced"
           done
 
       - name: Registry update PR
         uses: dataciviclab/.github/actions/registry-update-pr@main
         with:
-          prefix: "opere_pubbliche_intelligence"
+          prefix: "opere_pubbliche"
           flat: "true"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
