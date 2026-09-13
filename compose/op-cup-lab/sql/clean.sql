@@ -62,6 +62,15 @@ anac AS (
     GROUP BY cup
 ),
 
+-- SAL in ritardo: usa cup da anac_cross, conta da SAL grezzo
+sal_ritardo AS (
+    SELECT a.cup, COUNT(*) AS n_ritardo
+    FROM read_parquet('/home/gabry/dev/dataciviclab-workspace/appalti-pubblici/out/data/clean/anac_stati_avanzamento/2026/anac_stati_avanzamento_2026_clean.parquet') s
+    JOIN read_parquet('/home/gabry/dev/dataciviclab-workspace/appalti-pubblici/out/data/clean/anac_cross/2026/anac_cross_2026_clean.parquet') a ON s.cig = a.cig
+    WHERE s.flag_ritardo = 'IN RITARDO' AND a.cup IS NOT NULL AND TRIM(a.cup) != ''
+    GROUP BY a.cup
+),
+
 opencoesione AS (
     SELECT CUP AS cup, COUNT(*) AS coe_n_progetti,
            SUM(COALESCE(FINANZ_TOTALE_PUBBLICO, 0)) AS coe_finanz_tot_pubblico
@@ -104,6 +113,7 @@ SELECT
     COALESCE(a.anac_importo_aggiudicato, 0) AS anac_importo_aggiudicato,
     COALESCE(a.anac_n_sal, 0) AS anac_n_sal,
     COALESCE(a.anac_importo_sal, 0) AS anac_importo_sal,
+    COALESCE(sr.n_ritardo, 0) AS anac_sal_in_ritardo,
     CASE WHEN COALESCE(a.anac_n_cig, 0) >= 50 THEN true ELSE false END AS flag_ombrello,
     COALESCE(oc.coe_n_progetti, 0) AS coe_n_progetti,
     COALESCE(oc.coe_finanz_tot_pubblico, 0) AS coe_finanz_tot_pubblico,
@@ -127,5 +137,6 @@ LEFT JOIN pnrr ON p.cup = pnrr.cup
 LEFT JOIN pnrr_gare ON p.cup = pnrr_gare.cup
 LEFT JOIN pnrr_pagamenti ON p.cup = pnrr_pagamenti.cup
 LEFT JOIN anac a ON p.cup = a.cup
+LEFT JOIN sal_ritardo sr ON p.cup = sr.cup
 LEFT JOIN opencoesione oc ON p.cup = oc.cup
 LEFT JOIN silos s ON p.cup = s.cup

@@ -51,10 +51,7 @@ if search and cup_input:
         c1.metric("CIG", fmt_num(int(r.get("anac_n_cig", 0))))
         c2.metric("Gare", fmt_num(int(r.get("anac_n_gare", 0))))
         c3.metric("Importo agg.", fmt_eur(r.get("anac_importo_aggiudicato", 0)))
-        c4.metric("SAL", fmt_num(int(r.get("anac_n_sal", 0))))
-
-        c1, c2 = st.columns(2)
-        c1.metric("Importo SAL", fmt_eur(r.get("anac_importo_sal", 0)))
+        c4.metric("SAL in ritardo", fmt_num(int(r.get("anac_sal_in_ritardo", 0))))
 
         st.divider()
 
