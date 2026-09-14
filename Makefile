@@ -1,19 +1,24 @@
 # Opere Pubbliche Intelligence — Makefile
+# Ordine: support → datasets → compose
 # Il toolkit esegue i support prima dei dataset che li dichiarano.
-# Il compose li riusa (già runnati).
 TOOLKIT = toolkit
 
 # Abilita source type `script` del toolkit (download OpenCUP, SILOS)
 export TOOLKIT_ALLOW_SCRIPT_SOURCE ?= 1
 
 # --- Dataset del repo -------------------------------------------------------
-DATASETS := $(shell find datasets support -name dataset.yml 2>/dev/null | sort)
+SUPPORT  := $(shell find support -name dataset.yml 2>/dev/null | sort)
+DATASETS := $(shell find datasets -name dataset.yml 2>/dev/null | sort)
 COMPOSE  := $(shell find compose -name dataset.yml 2>/dev/null | sort)
 
-# --- Run toolkit ------------------------------------------------------------
+# --- Run toolkit (support → datasets → compose) -----------------------------
 
 .PHONY: run
 run:
+	@for f in $(SUPPORT); do \
+		echo "=== $$f ==="; \
+		$(TOOLKIT) run --config "$$f" || exit 1; \
+	done
 	@for f in $(DATASETS); do \
 		echo "=== $$f ==="; \
 		$(TOOLKIT) run --config "$$f" || exit 1; \
@@ -30,7 +35,7 @@ run-all: run
 
 .PHONY: check
 check:
-	@for f in $(DATASETS) $(COMPOSE); do \
+	@for f in $(SUPPORT) $(DATASETS) $(COMPOSE); do \
 		echo "→ $$f"; \
 		$(TOOLKIT) run preflight --config "$$f" > /dev/null 2>&1 || exit 1; \
 	done
