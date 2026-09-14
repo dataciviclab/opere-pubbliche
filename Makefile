@@ -1,32 +1,30 @@
 # Opere Pubbliche Intelligence — Makefile
-# Convenzione (ADR-001, modello multi-dataset):
-#   datasets/  = dataset principali (anagrafe OpenCUP + SILOS)
-#   support/   = lookup OpenCUP (fonti, localizzazione, soggetti)
-#   compose/   = cross-dataset compose (cup-lab con tutti gli attributi)
+# Pipeline toolkit: datasets/ (fetch) + support/ (lookup) + compose/ (cup-lab).
+# Tutto sequenziale: i compose leggono dai clean locali dei dataset.
 TOOLKIT = toolkit
+
+# Abilita source type `script` del toolkit (download OpenCUP, SILOS)
+export TOOLKIT_ALLOW_SCRIPT_SOURCE ?= 1
 
 # --- Dataset del repo -------------------------------------------------------
 DATASETS := $(shell find datasets support -name dataset.yml 2>/dev/null | sort)
 COMPOSE  := $(shell find compose -name dataset.yml 2>/dev/null | sort)
 
-# --- Run toolkit ------------------------------------------------------------
+# --- Run toolkit (sequenziale: datasets poi compose) -------------------------
 
 .PHONY: run
 run:
 	@for f in $(DATASETS); do \
 		echo "=== $$f ==="; \
-		TOOLKIT_ALLOW_SCRIPT_SOURCE=1 $(TOOLKIT) run --config "$$f" || exit 1; \
+		$(TOOLKIT) run --config "$$f" || exit 1; \
 	done
-
-.PHONY: compose
-compose:
 	@for f in $(COMPOSE); do \
 		echo "=== $$f ==="; \
 		$(TOOLKIT) run --config "$$f" || exit 1; \
 	done
 
 .PHONY: run-all
-run-all: run compose
+run-all: run
 
 # --- Validazione config ------------------------------------------------------
 

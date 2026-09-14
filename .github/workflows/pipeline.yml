@@ -22,7 +22,8 @@ jobs:
     uses: dataciviclab/.github/.github/workflows/pipeline-reusable.yml@main
     with:
       repo-slug: "opere_pubbliche"
-      run-command: "make run-all"
+      run-command: "make run"
+      verify-command: "make test"
       sync-pattern: "per-dataset"
       python-extra-packages: "-r requirements.txt"
       extra-env: "TOOLKIT_ALLOW_SCRIPT_SOURCE=1\nBLOCKED_SOURCE_PROXY=${{ vars.BLOCKED_SOURCE_PROXY }}"

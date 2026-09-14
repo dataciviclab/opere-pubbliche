@@ -1,6 +1,6 @@
 -- clean.sql — Compose op-cup-lab: 1 riga per CUP con tutti gli attributi
--- Dataset del repo: {support.name.clean} / {support.name.mart}
--- Dataset esterni: GCS paths
+-- Dataset del repo: {support.name.clean} / {support.name.mart} (path locali)
+-- Dataset esterni: GCS paths (già syncati dai loro pipeline)
 
 WITH
 loc AS (
