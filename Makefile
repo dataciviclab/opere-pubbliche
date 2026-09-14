@@ -1,6 +1,6 @@
 # Opere Pubbliche Intelligence — Makefile
-# Pipeline toolkit: datasets/ (fetch) + support/ (lookup) + compose/ (cup-lab).
-# Tutto sequenziale: i compose leggono dai clean locali dei dataset.
+# Il toolkit esegue i support prima dei dataset che li dichiarano.
+# Il compose li riusa (già runnati).
 TOOLKIT = toolkit
 
 # Abilita source type `script` del toolkit (download OpenCUP, SILOS)
@@ -10,7 +10,7 @@ export TOOLKIT_ALLOW_SCRIPT_SOURCE ?= 1
 DATASETS := $(shell find datasets support -name dataset.yml 2>/dev/null | sort)
 COMPOSE  := $(shell find compose -name dataset.yml 2>/dev/null | sort)
 
-# --- Run toolkit (sequenziale: datasets poi compose) -------------------------
+# --- Run toolkit ------------------------------------------------------------
 
 .PHONY: run
 run:

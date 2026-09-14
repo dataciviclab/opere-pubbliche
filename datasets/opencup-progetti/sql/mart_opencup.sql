@@ -1,9 +1,7 @@
 -- mart_opencup: 1 riga per CUP, anagrafe + localizzazione + fonti
 -- Compose di 3 tabelle OpenCUP (100% copertura incrociata).
--- Output del toolkit: out/data/mart/opencup_progetti/{year}/mart_opencup.parquet
 
 WITH
--- Localizzazione: 1 riga per CUP (priorita' Italia, poi primo comune)
 loc AS (
     SELECT cup, regione, provincia, comune, codice_comune
     FROM (
@@ -13,11 +11,10 @@ loc AS (
                 CASE WHEN stato = 'ITALIA' THEN 0 ELSE 1 END,
                 comune
             ) AS rn
-        FROM read_parquet('out/data/clean/opencup_localizzazione/2026/opencup_localizzazione_2026_clean.parquet')
+        FROM read_parquet('{support.localizzazione.clean}')
     ) WHERE rn = 1
 ),
 
--- Fonti: aggrega per CUP (1-8 fonti)
 fonti AS (
     SELECT cup,
            COUNT(*) AS n_fonti,
@@ -25,12 +22,11 @@ fonti AS (
            SUM(CASE WHEN copertura_finanziaria = 'COMUNITARIA' THEN 1 ELSE 0 END) > 0 AS ha_fonte_ue,
            SUM(CASE WHEN copertura_finanziaria = 'REGIONALE' THEN 1 ELSE 0 END) > 0 AS ha_fonte_regionale,
            SUM(CASE WHEN copertura_finanziaria = 'PRIVATA' THEN 1 ELSE 0 END) > 0 AS ha_fonte_privata
-    FROM read_parquet('out/data/clean/opencup_fonti/2026/opencup_fonti_2026_clean.parquet')
+    FROM read_parquet('{support.fonti.clean}')
     GROUP BY cup
 )
 
 SELECT
-    -- Anagrafe
     p.cup,
     p.anno_decisione,
     p.stato_progetto,
@@ -51,12 +47,10 @@ SELECT
     p.cup_master,
     p.flag_chiuso,
     p.flag_sub_progetto,
-    -- Localizzazione
     l.regione,
     l.provincia,
     l.comune,
     l.codice_comune,
-    -- Fonti
     COALESCE(f.n_fonti, 0) AS n_fonti,
     COALESCE(f.ha_fonte_statale, false) AS ha_fonte_statale,
     COALESCE(f.ha_fonte_ue, false) AS ha_fonte_ue,

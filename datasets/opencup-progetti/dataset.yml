@@ -25,6 +25,16 @@ raw:
         timeout: 3600
       primary: true
 
+support:
+  - type: dataset
+    name: localizzazione
+    config: ../../support/opencup-localizzazione/dataset.yml
+    years: [2026]
+  - type: dataset
+    name: fonti
+    config: ../../support/opencup-fonti/dataset.yml
+    years: [2026]
+
 clean:
   sql: "sql/clean.sql"
   read:
