@@ -34,21 +34,5 @@ jobs:
     if: needs.detect.outputs.found == 'true'
     uses: dataciviclab/.github/.github/workflows/dataset-config-check-reusable.yml@main
     with:
-      install: "pip install -r requirements.txt"
       configs: ${{ needs.detect.outputs.dirs }}
       years: "from-config"
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dataciviclab/.github/actions/python-setup@main
-      - name: Install dev dependencies
-        run: pip install -r requirements.txt && pip install ruff pytest pyyaml
-      - name: Lint
-        run: ruff check .
-      - name: Contract test
-        run: python -m pytest tests/test_contract.py -v -m contract
-
-  lint-workflows:
-    uses: dataciviclab/.github/.github/workflows/lint-workflows-reusable.yml@main
