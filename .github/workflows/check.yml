@@ -11,6 +11,7 @@ on:
       - "**/*.yaml"
       - "**/*.sql"
       - "**/Makefile"
+      - "requirements.txt"
 
 jobs:
   detect:
@@ -41,8 +42,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dataciviclab/.github/actions/python-setup@main
-      - name: Install dev dependencies
-        run: pip install -e ".[dev]"
       - name: Lint
         run: ruff check .
       - name: Contract test

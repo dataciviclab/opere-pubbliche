@@ -24,8 +24,6 @@ jobs:
       repo-slug: "opere_pubbliche"
       run-command: "make run"
       verify-command: "make test"
-      sync-pattern: "per-dataset"
-      python-extra-packages: "-e .\"[dev,pipeline]\""
       extra-env: "TOOLKIT_ALLOW_SCRIPT_SOURCE=1\nBLOCKED_SOURCE_PROXY=${{ vars.BLOCKED_SOURCE_PROXY }}"
     secrets:
       GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
