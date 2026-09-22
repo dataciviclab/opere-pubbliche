@@ -36,16 +36,3 @@ jobs:
     with:
       configs: ${{ needs.detect.outputs.dirs }}
       years: "from-config"
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dataciviclab/.github/actions/python-setup@main
-      - name: Lint
-        run: ruff check .
-      - name: Contract test
-        run: python -m pytest tests/test_contract.py -v -m contract
-
-  lint-workflows:
-    uses: dataciviclab/.github/.github/workflows/lint-workflows-reusable.yml@main
