@@ -34,6 +34,30 @@ support:
     name: silos
     config: ../../datasets/silos-infrastrutture/dataset.yml
     years: [2024]
+  - type: external
+    name: pnrr_progetti
+    uri: "https://storage.googleapis.com/dataciviclab-clean/open-pnrr/pnrr_progetti/{year}/pnrr_progetti_{year}_clean.parquet"
+    years: [2026]
+  - type: external
+    name: pnrr_gare
+    uri: "https://storage.googleapis.com/dataciviclab-clean/open-pnrr/pnrr_gare/{year}/pnrr_gare_{year}_clean.parquet"
+    years: [2026]
+  - type: external
+    name: pnrr_pagamenti
+    uri: "https://storage.googleapis.com/dataciviclab-clean/open-pnrr/pnrr_pagamenti/{year}/pnrr_pagamenti_{year}_clean.parquet"
+    years: [2026]
+  - type: external
+    name: anac_cross
+    uri: "https://storage.googleapis.com/dataciviclab-clean/appalti_pubblici/anac_cross/{year}/anac_cross_{year}_clean.parquet"
+    years: [2026]
+  - type: external
+    name: anac_stati_avanzamento
+    uri: "https://storage.googleapis.com/dataciviclab-clean/appalti_pubblici/anac_stati_avanzamento/{year}/anac_stati_avanzamento_{year}_clean.parquet"
+    years: [2026]
+  - type: external
+    name: opencoesione_progetti
+    uri: "https://storage.googleapis.com/dataciviclab-clean/open-coesione/opencoesione_progetti_esteso/{year}/opencoesione_progetti_esteso_{year}_clean.parquet"
+    years: [2026]
 
 clean:
   sql: "sql/clean.sql"
