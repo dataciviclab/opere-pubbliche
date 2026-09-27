@@ -5,7 +5,7 @@ Verifica la struttura del repo, non il motore del toolkit:
   - ogni dataset espone un contratto minimo (dataset.yml, SQL dichiarati)
   - i path dichiarati sono relativi e POSIX
   - non si committano output di run (out/)
-  - presenza dei componenti condivisi (Makefile, requirements.txt, workflows)
+  - presenza dei componenti condivisi (Makefile, pyproject.toml, workflows)
 
 Markers: contract (contratto pubblico, artifact format).
 """
@@ -22,7 +22,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "out"
 REQUIRED_FILES = [
     REPO_ROOT / "Makefile",
-    REPO_ROOT / "requirements.txt",
+    REPO_ROOT / "pyproject.toml",
     REPO_ROOT / "conftest.py",
     REPO_ROOT / "LICENSE",
     REPO_ROOT / "README.md",

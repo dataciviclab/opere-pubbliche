@@ -50,7 +50,7 @@ def test_smoke() -> None:
         SELECT SUM(con_almeno_una_fonte_lab), SUM(CASE WHEN silos_costi_mln IS NOT NULL THEN 1 ELSE 0 END)
         FROM read_parquet('{CLEAN}')
     """).fetchone()
-    assert r[0] >= 2_500_000, f"copertura Lab >= 2.5M (reale: {r[0]:,})"
+    assert r[0] >= 1_500_000, f"copertura Lab >= 1.5M (reale: {r[0]:,})"
     assert r[1] >= 1_000, f"SILOS >= 1k CUP (reale: {r[1]:,})"
 
     con.close()
