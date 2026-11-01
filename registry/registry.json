@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repo": "opere-pubbliche",
   "source_repo": "dataciviclab/opere-pubbliche",
-  "updated_at": "2026-10-01",
+  "updated_at": "2026-11-01",
   "datasets": [
     {
       "slug": "op_cup_lab",
@@ -145,7 +145,8 @@
           "name": "pnrr_missione",
           "type": "VARCHAR",
           "role": "dimension",
-          "description": ""
+          "description": "",
+          "semantic_type": "programma_code"
         },
         {
           "name": "pnrr_stato_avanzamento",
@@ -521,7 +522,8 @@
           "name": "piva_soggetto_titolare",
           "type": "VARCHAR",
           "role": "dimension",
-          "description": ""
+          "description": "",
+          "semantic_type": "fiscal_code"
         },
         {
           "name": "natura_intervento",
@@ -623,7 +625,8 @@
           "name": "piva_codfiscale_sog_titolare",
           "type": "VARCHAR",
           "role": "dimension",
-          "description": ""
+          "description": "",
+          "semantic_type": "fiscal_code"
         },
         {
           "name": "indirizzo_sog_titolare",
@@ -641,7 +644,8 @@
           "name": "codice_comune_sogg_titolare",
           "type": "VARCHAR",
           "role": "dimension",
-          "description": ""
+          "description": "",
+          "semantic_type": "municipality_code"
         },
         {
           "name": "codice_categoria_soggetto",
@@ -897,7 +901,7 @@
       "detail": "anno 2026 — mart: si",
       "action": "",
       "run": {
-        "run_id": "20261001T124519Z_b1e73af5",
+        "run_id": "20261101T130154Z_71f7576a",
         "year": 2026,
         "status": "SUCCESS",
         "quality_score": {
@@ -906,17 +910,17 @@
           "mart": 100
         },
         "output_rows": {
-          "clean": 11973988,
+          "clean": 12031370,
           "mart": 5874
         },
         "output_bytes": {
-          "raw": 514419093,
-          "clean": 444078445,
-          "mart": 111000
+          "raw": 517004710,
+          "clean": 445933385,
+          "mart": 110820
         },
-        "started_at": "2026-10-01T12:45:19.752881+00:00",
-        "finished_at": "2026-10-01T12:46:44.452635+00:00",
-        "duration_seconds": 84.7
+        "started_at": "2026-11-01T13:01:54.044878+00:00",
+        "finished_at": "2026-11-01T13:04:11.084715+00:00",
+        "duration_seconds": 137.04
       }
     },
     {
@@ -927,7 +931,7 @@
       "detail": "anno 2026 — mart: si",
       "action": "",
       "run": {
-        "run_id": "20261001T123428Z_eea1c810",
+        "run_id": "20261101T125150Z_8fbc76e4",
         "year": 2026,
         "status": "SUCCESS",
         "quality_score": {
@@ -936,17 +940,17 @@
           "mart": 100
         },
         "output_rows": {
-          "clean": 11973988,
-          "mart": 23947976
+          "clean": 12031370,
+          "mart": 24062740
         },
         "output_bytes": {
-          "raw": 1456725109,
-          "clean": 511307625,
-          "mart": 1103704797
+          "raw": 1464966565,
+          "clean": 514055222,
+          "mart": 1109295267
         },
-        "started_at": "2026-10-01T12:34:28.142315+00:00",
-        "finished_at": "2026-10-01T12:45:17.220038+00:00",
-        "duration_seconds": 649.078
+        "started_at": "2026-11-01T12:51:50.051780+00:00",
+        "finished_at": "2026-11-01T13:01:50.788301+00:00",
+        "duration_seconds": 600.737
       }
     },
     {
@@ -957,7 +961,7 @@
       "detail": "anno 2024 — mart: si",
       "action": "",
       "run": {
-        "run_id": "20261001T124517Z_4b0be0c2",
+        "run_id": "20261101T130151Z_99660ebe",
         "year": 2024,
         "status": "SUCCESS",
         "quality_score": {
@@ -975,9 +979,9 @@
           "clean": 150267,
           "mart": 163257
         },
-        "started_at": "2026-10-01T12:45:17.690286+00:00",
-        "finished_at": "2026-10-01T12:45:19.313692+00:00",
-        "duration_seconds": 1.623
+        "started_at": "2026-11-01T13:01:51.282679+00:00",
+        "finished_at": "2026-11-01T13:01:53.588325+00:00",
+        "duration_seconds": 2.306
       }
     },
     {
@@ -988,7 +992,7 @@
       "detail": "anno 2026 — mart: si",
       "action": "",
       "run": {
-        "run_id": "20261001T122749Z_8122fbfc",
+        "run_id": "20261101T124146Z_cdc163f6",
         "year": 2026,
         "status": "SUCCESS",
         "quality_score": {
@@ -997,18 +1001,18 @@
           "mart": 100
         },
         "output_rows": {
-          "raw": 22851925,
-          "clean": 22851925,
-          "mart": 22851925
+          "raw": 22965419,
+          "clean": 22965419,
+          "mart": 22965419
         },
         "output_bytes": {
-          "raw": 821832325,
-          "clean": 150755437,
-          "mart": 143850052
+          "raw": 825908412,
+          "clean": 151532136,
+          "mart": 144587734
         },
-        "started_at": "2026-10-01T12:27:49.623583+00:00",
-        "finished_at": "2026-10-01T12:30:21.671275+00:00",
-        "duration_seconds": 152.048
+        "started_at": "2026-11-01T12:41:46.968878+00:00",
+        "finished_at": "2026-11-01T12:45:38.094849+00:00",
+        "duration_seconds": 231.126
       }
     },
     {
@@ -1019,7 +1023,7 @@
       "detail": "anno 2026 — mart: si",
       "action": "",
       "run": {
-        "run_id": "20261001T123023Z_92313656",
+        "run_id": "20261101T124540Z_4f6d6626",
         "year": 2026,
         "status": "SUCCESS",
         "quality_score": {
@@ -1028,18 +1032,18 @@
           "mart": 100
         },
         "output_rows": {
-          "raw": 13630083,
-          "clean": 13630083,
-          "mart": 13630083
+          "raw": 13691455,
+          "clean": 13691455,
+          "mart": 13691455
         },
         "output_bytes": {
-          "raw": 1431598420,
-          "clean": 191194929,
-          "mart": 158610608
+          "raw": 1438156537,
+          "clean": 191990277,
+          "mart": 159285500
         },
-        "started_at": "2026-10-01T12:30:23.639228+00:00",
-        "finished_at": "2026-10-01T12:34:22.217902+00:00",
-        "duration_seconds": 238.579
+        "started_at": "2026-11-01T12:45:40.606779+00:00",
+        "finished_at": "2026-11-01T12:51:41.761206+00:00",
+        "duration_seconds": 361.154
       }
     },
     {
@@ -1050,7 +1054,7 @@
       "detail": "anno 2026 — mart: si",
       "action": "",
       "run": {
-        "run_id": "20261001T123423Z_dec4d0ac",
+        "run_id": "20261101T125143Z_feac5dc6",
         "year": 2026,
         "status": "SUCCESS",
         "quality_score": {
@@ -1059,18 +1063,18 @@
           "mart": 100
         },
         "output_rows": {
-          "raw": 54449,
-          "clean": 54449,
-          "mart": 54449
+          "raw": 54605,
+          "clean": 54605,
+          "mart": 54605
         },
         "output_bytes": {
-          "raw": 17137341,
-          "clean": 2361579,
-          "mart": 2361579
+          "raw": 17176719,
+          "clean": 2371188,
+          "mart": 2371188
         },
-        "started_at": "2026-10-01T12:34:23.217693+00:00",
-        "finished_at": "2026-10-01T12:34:27.722895+00:00",
-        "duration_seconds": 4.505
+        "started_at": "2026-11-01T12:51:43.114178+00:00",
+        "finished_at": "2026-11-01T12:51:49.614964+00:00",
+        "duration_seconds": 6.501
       }
     }
   ],
@@ -1098,11 +1102,38 @@
             "name": "Opencup Localizzazione",
             "column": "comune",
             "semantic_type": "municipality_name"
+          },
+          {
+            "slug": "opencup_soggetti",
+            "name": "Opencup Soggetti",
+            "column": "codice_comune_sogg_titolare",
+            "semantic_type": "municipality_code"
           }
         ],
         "types": {
           "municipality_name": 2,
-          "municipality_code": 1
+          "municipality_code": 2
+        }
+      },
+      "Ente (o Impresa)": {
+        "entity": "Ente (o Impresa)",
+        "label": "Ente (o Impresa)",
+        "datasets": [
+          {
+            "slug": "opencup_progetti",
+            "name": "Opencup Progetti",
+            "column": "piva_soggetto_titolare",
+            "semantic_type": "fiscal_code"
+          },
+          {
+            "slug": "opencup_soggetti",
+            "name": "Opencup Soggetti",
+            "column": "piva_codfiscale_sog_titolare",
+            "semantic_type": "fiscal_code"
+          }
+        ],
+        "types": {
+          "fiscal_code": 2
         }
       },
       "Nazione": {
@@ -1157,6 +1188,21 @@
         ],
         "types": {
           "cup_code": 5
+        }
+      },
+      "Programma": {
+        "entity": "Programma",
+        "label": "Programma",
+        "datasets": [
+          {
+            "slug": "op_cup_lab",
+            "name": "Op Cup Lab",
+            "column": "pnrr_missione",
+            "semantic_type": "programma_code"
+          }
+        ],
+        "types": {
+          "programma_code": 1
         }
       },
       "Provincia": {
@@ -1247,6 +1293,19 @@
           "bridge": "anac_cup",
           "on": "cup",
           "semantic_type": "municipality_code"
+        }
+      },
+      {
+        "from": {
+          "entity": "Programma",
+          "dataset": "op_cup_lab",
+          "via": "programma_code"
+        },
+        "to": {
+          "entity": "Progetto",
+          "bridge": "opencoesione_progetti_esteso",
+          "on": "CUP",
+          "semantic_type": "cup_code"
         }
       },
       {
