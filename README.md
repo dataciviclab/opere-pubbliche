@@ -83,7 +83,7 @@ tests/                      ← contract + smoke test
 | Fonte | Cosa fornisce | Dove legge |
 |---|---|---|
 | **OpenCUP** | anagrafe CUP (progetti, localizzazione, fonti) | `datasets/` + `support/` |
-| **ANAC** | gare, aggiudicazioni, partecipanti, collaudo, SAL | `appalti-pubblici` (anac_cross) |
+| **ANAC** | CIG↔CUP, aggiudicazioni, SAL | `appalti-pubblici` (`anac_cup`, `anac_aggiudicazioni`, `anac_stati_avanzamento`) |
 | **PNRR** | missione, finanziamenti, gare, pagamenti | `incubation/dataset-incubator` |
 | **OpenCoesione** | ciclo, finanziamenti, stato progetti | `incubation/dataset-incubator` |
 
