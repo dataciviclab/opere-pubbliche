@@ -51,24 +51,65 @@ pnrr_pagamenti AS (
     GROUP BY cup
 ),
 
+anac_cig AS (
+    -- Mapping CIG -> CUP. Il vecchio compose `anac_cross` teneva un solo CUP per
+    -- CIG (MIN) perche' i consumer CUP-level joinano su una stringa singola:
+    -- stessa scelta qui, altrimenti un CIG con due CUP verrebbe contato due volte
+    -- e `flag_ombrello` (>= 50 CIG) cambierebbe significato.
+    SELECT cig, MIN(cup) AS cup
+    FROM read_parquet('{support.anac_cup.path}')
+    WHERE cup IS NOT NULL AND TRIM(cup) != ''
+      AND cup NOT IN ('ND', '000000000000000')
+      AND cig IS NOT NULL AND TRIM(cig) != ''
+    GROUP BY cig
+),
+
+anac_agg AS (
+    -- Stessi filtri del clean CIG-level che stavamo leggendo: le aggiudicazioni
+    -- a importo nullo o fuori scala non contano.
+    SELECT cig,
+           COUNT(DISTINCT id_aggiudicazione) AS n_aggiudicazioni,
+           SUM(importo_aggiudicazione) AS importo_totale_agg,
+           MAX(data_aggiudicazione_definitiva) AS data_ultima_agg
+    FROM read_parquet('{support.anac_aggiudicazioni.path}')
+    WHERE importo_aggiudicazione > 0
+      AND importo_aggiudicazione < 100000000000
+    GROUP BY cig
+),
+
+anac_sal AS (
+    SELECT cig,
+           COUNT(*) AS n_sal,
+           SUM(importo_quota) AS importo_totale_sal
+    FROM read_parquet('{support.anac_stati_avanzamento.path}')
+    WHERE data_emissione_sal IS NOT NULL
+    GROUP BY cig
+),
+
 anac AS (
-    SELECT cup, COUNT(DISTINCT cig) AS anac_n_cig,
-           SUM(n_aggiudicazioni) AS anac_n_gare,
-           SUM(importo_totale_agg) AS anac_importo_aggiudicato,
-           SUM(n_sal) AS anac_n_sal,
-           SUM(importo_totale_sal) AS anac_importo_sal,
-           MAX(data_ultima_agg) AS anac_data_ultima_agg
-    FROM read_parquet('{support.anac_cross.path}')
-    WHERE cup IS NOT NULL AND cup NOT IN ('ND', '000000000000000', '') AND TRIM(cup) != ''
-    GROUP BY cup
+    -- Base: tutti i CIG con un CUP reale (il vecchio compose partiva da
+    -- "tutti i CIG noti a una qualunque fonte ANAC", non solo da quelli
+    -- aggiudicati): un CIG senza aggiudicazione conta in `anac_n_cig` e vale 0
+    -- nelle metriche, esattamente come prima.
+    SELECT m.cup,
+           COUNT(DISTINCT m.cig) AS anac_n_cig,
+           SUM(COALESCE(g.n_aggiudicazioni, 0)) AS anac_n_gare,
+           SUM(COALESCE(g.importo_totale_agg, 0)) AS anac_importo_aggiudicato,
+           SUM(COALESCE(sl.n_sal, 0)) AS anac_n_sal,
+           SUM(COALESCE(sl.importo_totale_sal, 0)) AS anac_importo_sal,
+           MAX(g.data_ultima_agg) AS anac_data_ultima_agg
+    FROM anac_cig m
+    LEFT JOIN anac_agg g ON m.cig = g.cig
+    LEFT JOIN anac_sal sl ON m.cig = sl.cig
+    GROUP BY m.cup
 ),
 
 sal_ritardo AS (
-    SELECT a.cup, COUNT(*) AS n_ritardo
+    SELECT m.cup, COUNT(*) AS n_ritardo
     FROM read_parquet('{support.anac_stati_avanzamento.path}') s
-    JOIN read_parquet('{support.anac_cross.path}') a ON s.cig = a.cig
-    WHERE s.flag_ritardo = 'IN RITARDO' AND a.cup IS NOT NULL AND TRIM(a.cup) != ''
-    GROUP BY a.cup
+    JOIN anac_cig m ON s.cig = m.cig
+    WHERE s.flag_ritardo = 'IN RITARDO'
+    GROUP BY m.cup
 ),
 
 opencoesione AS (
