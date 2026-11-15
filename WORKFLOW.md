@@ -32,12 +32,17 @@ Come contribuire a Opere Pubbliche Intelligence.
 
 ## Dati esterni
 
-I compose leggono i clean da altre repo:
-- ANAC: `appalti-pubblici/out/data/clean/anac_cross/`
-- PNRR: `incubation/dataset-incubator/out/data/clean/pnrr_*/`
-- OpenCoesione: `incubation/dataset-incubator/out/data/clean/opencoesione_*/`
+I compose leggono i clean da altre repo, su GCS:
+- ANAC: `appalti_pubblici/anac_cup`, `anac_aggiudicazioni`, `anac_stati_avanzamento`
+  (prima era il compose `anac_cross`, rimosso in `appalti-pubblici`: era un
+  CIG-level da 11 join, ricostruito qui solo per le metriche che servono)
+- PNRR: `open_pnrr/pnrr_*`
+- OpenCoesione: `open_coesione/opencoesione_progetti_esteso`
 
-Per CI, questi path verranno sostituiti con GCS.
+`op-cup-lab` non ha un guardiano di freschezza: se la pipeline di
+`appalti-pubblici` si ferma, le colonne `anac_*` invecchiano **senza segnale** e
+`min_rows` non aiuta (le righe non cambiano). Controllo: `anac_data_ultima_agg`
+nella tabella `mart_territorio`.
 
 ## Confine tecnico
 
