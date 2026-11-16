@@ -56,8 +56,28 @@ pagato».
 
 Per i costi dell'opera il clean espone il quadro economico ANAC, omogeneo in
 tutta la serie: `anac_importo_base`, `anac_importo_consuntivo`,
-`anac_scostamento_pct` (NULL dove manca la base, non 0) e `anac_n_varianti_qe`.
-Il mart `mart_costi` li aggrega per regione × settore.
+`anac_scostamento_pct` e `anac_n_varianti_qe` (varianti **distinte**). Il mart
+`mart_costi` li aggrega per regione × settore.
+
+Tre regole di lettura, perché qui "costo" e' un rapporto tra due popolazioni e
+non un dato additivo:
+
+1. **NULL = dato assente, mai zero.** La base c'e' quasi sempre, il consuntivo
+   per un quarto dei CUP: se nessun CIG ha il consuntivo, `anac_importo_consuntivo`
+   e `anac_scostamento_pct` sono NULL. Contarli come zero direbbe «i lavori sono
+   costati zero» — sarebbe uno scostamento del -100% per la maggior parte dei CUP.
+   `anac_n_cig_con_base` / `anac_n_cig_con_consuntivo` dicono su quanti CIG e'
+   calcolato.
+2. **Base >= 1 mld su un singolo CIG = sospetta** (`anac_base_sospetta`). La
+   fonte ha importi fino a 1e73: senza guardia due CUP valgono 16 mila miliardi.
+   Gli importi sospetti restano fuori dalle somme, la riga resta visibile con il
+   flag.
+3. **Questa non e' la stessa cosa di `mart_sforamento` in appalti-pubblici.**
+   Qui si somma per CUP su tutti gli eventi (`COALESCE` sui componenti);
+   `mart_cig`/`mart_sforamento` sommano per CIG **senza** `COALESCE`, quindi su
+   una fetta piu' stretta (il 62,3% delle righe di `BASE_ASTA` ha almeno un
+   componente NULL). Non sono confrontabili: due "scostamenti" per gli stessi CIG
+   sono una trappola, non due misure.
 
 ## Confine tecnico
 
