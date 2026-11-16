@@ -45,3 +45,19 @@ def test_zip_valido_rifiuta_un_parziale(tmp_path: Path) -> None:
     modulo = _modulo()
     assert modulo.zip_valido(troncato) is False, "un download interrotto non e' uno ZIP valido"
     assert modulo.zip_valido(tmp_path / "assente.zip") is False
+
+
+@pytest.mark.regression
+def test_marker_non_salva_uno_zip_troncato(tmp_path: Path) -> None:
+    """Il marker `.ok` evita di ri-testare 3 GB, ma non deve fidarsi di un file
+    cambiato dopo la verifica: la firma (dimensione+mtime) non torna e si
+    riverifica."""
+    path = tmp_path / "ok.zip"
+    with zipfile.ZipFile(path, "w") as z:
+        z.writestr("a.csv", "x;y\n" + "1;2\n" * 500)
+    modulo = _modulo()
+    assert modulo.zip_valido(path) is True
+    assert (tmp_path / "ok.zip.ok").exists(), "la verifica scrive il marker"
+
+    path.write_bytes(path.read_bytes()[: path.stat().st_size // 2])
+    assert modulo.zip_valido(path) is False

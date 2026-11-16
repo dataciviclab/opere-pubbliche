@@ -10,7 +10,8 @@ Supporta:
   download interrotto a 2 GB su 3 ripartiva sempre da zero.
 - Retry su qualunque errore (`--retry-all-errors`), non solo HTTP.
 - **Verifica d'integrita'** dello ZIP prima del merge: un parziale che sembra
-  completo produrrebbe un parquet monco in silenzio.
+  completo produrrebbe un parquet monco in silenzio. Un marker `.ok` (firma
+  dimensione+mtime) evita di ri-testare 3 GB a ogni run dalla cache.
 - Proxy via BLOCKED_SOURCE_PROXY (se configurato)
 - Timeout configurabile (default 3600s)
 
@@ -49,14 +50,32 @@ def fetch_url() -> str:
 
 
 def zip_valido(path: Path) -> bool:
-    """True se lo ZIP si apre e tutti i membri hanno il CRC corretto."""
+    """True se lo ZIP si apre e tutti i membri hanno il CRC corretto.
+
+    `testzip()` su 3 GB e' una decompressione completa: un marker `.ok` con
+    firma (dimensione + mtime) evita di ripeterla a ogni run quando il file
+    viene dalla cache. Se il file cambia, la firma non torna e si riverifica.
+    """
     if not path.exists():
         return False
+    marker = path.with_name(path.name + ".ok")
+    firma = f"{path.stat().st_size}:{int(path.stat().st_mtime)}"
+    try:
+        if marker.exists() and marker.read_text(encoding="utf-8").strip() == firma:
+            return True
+    except OSError:
+        pass
     try:
         with zipfile.ZipFile(path) as z:
-            return z.testzip() is None
+            if z.testzip() is not None:
+                return False
     except (zipfile.BadZipFile, OSError):
         return False
+    try:
+        marker.write_text(firma, encoding="utf-8")
+    except OSError:
+        pass
+    return True
 
 
 def download_zip(url: str, dest: Path) -> None:

@@ -66,6 +66,7 @@ def test_anac_n_cig_conta_anche_i_cig_senza_aggiudicazione(tmp_path: Path) -> No
         SELECT * FROM (VALUES
             ('CIG_A',     'CUP_REAL'),
             ('CIG_NOAGG', 'CUP_REAL'),
+            ('CIG_ZERO',  'CUP_REAL'),
             ('CIG_SENT',  '{SENTINEL}'),
             ('CIG_SENT',  'CUP_SENTINEL_CIG'),
             ('CIG_MULTI', 'CUP_MULTI_ZZ'),
@@ -106,6 +107,8 @@ def test_anac_n_cig_conta_anche_i_cig_senza_aggiudicazione(tmp_path: Path) -> No
             ('CIG_A', 1, DATE '2024-02-01', 'VARIANTE', 'V1', 110.0, 0.0, 0.0),
             ('CIG_A', 1, NULL, 'CONSUNTIVO', 'C1', 120.0, 0.0, 0.0),
             ('CIG_NOAGG', 9, NULL, 'BASE_ASTA', 'B9', 50.0, 0.0, 0.0),
+            ('CIG_ZERO',  8, NULL, 'BASE_ASTA', 'B8', 0.0, 0.0, 0.0),
+            ('CIG_ZERO',  8, NULL, 'CONSUNTIVO', 'C8', 30.0, 0.0, 0.0),
             ('CIG_SENT',  2, NULL, 'BASE_ASTA', 'B2', 10.0, 0.0, 0.0),
             ('CIG_ABS',   7, NULL, 'BASE_ASTA', 'B7', 20000000000.0, 0.0, 0.0)
         ) AS t(cig, id_aggiudicazione, data, descrizione_evento, dettaglio_evento,
@@ -176,7 +179,7 @@ def test_anac_n_cig_conta_anche_i_cig_senza_aggiudicazione(tmp_path: Path) -> No
 
     # 1. il CIG senza aggiudicazione conta: 2 CIG sotto CUP_REAL, 1 gara sola
     real = righe["CUP_REAL"]
-    assert real["anac_n_cig"] == 2, "il CIG senza aggiudicazione conta in anac_n_cig"
+    assert real["anac_n_cig"] == 3, "i CIG senza aggiudicazione (e con base zero) contano in anac_n_cig"
     assert real["anac_n_gare"] == 1, "ma non genera gare"
     assert real["anac_importo_aggiudicato"] == 100.0
     assert real["anac_n_sal"] == 2, "n_sal conta tutte le righe SAL del CIG"
@@ -187,9 +190,9 @@ def test_anac_n_cig_conta_anche_i_cig_senza_aggiudicazione(tmp_path: Path) -> No
     # CIG_NOAGG (50 base, nessun consuntivo). Il consuntivo esiste per il CUP
     # perche' almeno un CIG ce l'ha.
     assert real["anac_importo_base"] == 150.0
-    assert real["anac_importo_consuntivo"] == 120.0
-    assert real["anac_n_cig_con_base"] == 2
-    assert real["anac_n_cig_con_consuntivo"] == 1
+    assert real["anac_importo_consuntivo"] == 150.0, "120 di CIG_A + 30 di CIG_ZERO"
+    assert real["anac_n_cig_con_base"] == 2, "la base a zero non conta come base"
+    assert real["anac_n_cig_con_consuntivo"] == 2, "CIG_A e CIG_ZERO hanno un consuntivo"
     # scostamento sugli APPAIATI: solo CIG_A (base 100, consuntivo 120).
     # Senza pairing sarebbe (120-150)/150 = -20%: il consuntivo di un CIG
     # diviso per la base di due, cioe' "i costi sono calati" per costruzione.

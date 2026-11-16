@@ -134,9 +134,11 @@ anac_qe AS (
         -- Un consuntivo registrato a 0 non e' una misura, e' un segnaposto:
         -- trattarlo come valore produce uno scostamento del -100%.
         COALESCE(importo_consuntivo = 0, FALSE) AS consuntivo_zero,
-        CASE WHEN importo_base IS NOT NULL AND importo_consuntivo > 0
+        -- `> 0` su entrambi: una base a zero aggiungerebbe numeratore senza
+        -- denominatore (1.330 CIG nella fonte)
+        CASE WHEN importo_base > 0 AND importo_consuntivo > 0
              THEN importo_base END AS base_appaiata,
-        CASE WHEN importo_base IS NOT NULL AND importo_consuntivo > 0
+        CASE WHEN importo_base > 0 AND importo_consuntivo > 0
              THEN importo_consuntivo END AS cons_appaiato,
         -- 10 mld su un singolo contratto e' il limite dell'assurdo (la fonte
         -- arriva a 1e73); 1 mld e' solo "opera grande": resta, ma segnalato.
@@ -159,7 +161,7 @@ anac AS (
            MAX(g.data_ultima_agg) AS anac_data_ultima_agg,
            -- contatori coerenti con gli importi: stessi filtri
            COUNT(DISTINCT m.cig) FILTER (
-               WHERE q.importo_base IS NOT NULL AND NOT COALESCE(q.base_sospetta, FALSE)
+               WHERE q.importo_base > 0 AND NOT COALESCE(q.base_sospetta, FALSE)
            ) AS anac_n_cig_con_base,
            COUNT(DISTINCT m.cig) FILTER (
                WHERE q.importo_consuntivo IS NOT NULL AND NOT COALESCE(q.base_sospetta, FALSE)
