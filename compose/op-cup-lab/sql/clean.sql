@@ -131,9 +131,12 @@ anac_qe AS (
         -- e' un rapporto e va calcolato su chi ha entrambi i termini: sui CUP
         -- parziali (alcuni CIG con consuntivo, altri no) il rapporto e'
         -- strutturalmente negativo e falsa la mediana.
-        CASE WHEN importo_base IS NOT NULL AND importo_consuntivo IS NOT NULL
+        -- Un consuntivo registrato a 0 non e' una misura, e' un segnaposto:
+        -- trattarlo come valore produce uno scostamento del -100%.
+        COALESCE(importo_consuntivo = 0, FALSE) AS consuntivo_zero,
+        CASE WHEN importo_base IS NOT NULL AND importo_consuntivo > 0
              THEN importo_base END AS base_appaiata,
-        CASE WHEN importo_base IS NOT NULL AND importo_consuntivo IS NOT NULL
+        CASE WHEN importo_base IS NOT NULL AND importo_consuntivo > 0
              THEN importo_consuntivo END AS cons_appaiato,
         -- 10 mld su un singolo contratto e' il limite dell'assurdo (la fonte
         -- arriva a 1e73); 1 mld e' solo "opera grande": resta, ma segnalato.
@@ -166,6 +169,7 @@ anac AS (
            ) AS anac_n_cig_appaiati,
            COUNT(*) FILTER (WHERE q.base_sospetta) AS anac_n_cig_base_sospetta,
            COUNT(*) FILTER (WHERE q.base_grande) AS anac_n_cig_base_grande,
+           COUNT(*) FILTER (WHERE q.consuntivo_zero) AS anac_n_cig_consuntivo_zero,
            -- gli importi sospetti restano fuori dalle somme: il CUP resta nel
            -- clean con `anac_base_sospetta`, cosi' l'esclusione e' verificabile
            SUM(q.importo_base) FILTER (WHERE NOT COALESCE(q.base_sospetta, FALSE))
@@ -248,6 +252,7 @@ SELECT
     COALESCE(a.anac_n_cig_con_consuntivo, 0) AS anac_n_cig_con_consuntivo,
     COALESCE(a.anac_n_cig_appaiati, 0) AS anac_n_cig_appaiati,
     COALESCE(a.anac_n_cig_base_sospetta, 0) AS anac_n_cig_base_sospetta,
+    COALESCE(a.anac_n_cig_consuntivo_zero, 0) AS anac_n_cig_consuntivo_zero,
     COALESCE(a.anac_n_cig_base_grande, 0) AS anac_n_cig_base_grande,
     COALESCE(a.anac_n_cig_base_sospetta, 0) > 0 AS anac_base_sospetta,
     -- scostamento su base e consuntivo APPAIATI (stessi CIG): su un CUP

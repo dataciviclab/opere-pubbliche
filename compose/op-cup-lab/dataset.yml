@@ -58,6 +58,10 @@ support:
     uri: "https://storage.googleapis.com/dataciviclab-clean/appalti_pubblici/anac_aggiudicazioni/{year}/anac_aggiudicazioni_{year}_clean.parquet"
     years: [2026]
   - type: external
+    name: anac_quadro_economico
+    uri: "https://storage.googleapis.com/dataciviclab-clean/appalti_pubblici/anac_quadro_economico/{year}/anac_quadro_economico_{year}_clean.parquet"
+    years: [2026]
+  - type: external
     name: anac_stati_avanzamento
     uri: "https://storage.googleapis.com/dataciviclab-clean/appalti_pubblici/anac_stati_avanzamento/{year}/anac_stati_avanzamento_{year}_clean.parquet"
     years: [2026]
