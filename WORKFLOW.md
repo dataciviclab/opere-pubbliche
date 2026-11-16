@@ -89,6 +89,17 @@ non un dato additivo:
    componente NULL). Non sono confrontabili: due "scostamenti" per gli stessi CIG
    sono una trappola, non due misure.
 
+### Download OpenCUP: cache persistente
+
+Lo ZIP di `opencup-progetti` pesa ~3 GB. Lo script lo scarica in
+`~/.cache/dataciviclab/opencup/` (override con `OPENCUP_CACHE_DIR`), non in una
+directory temporanea: cosi' il `curl -C -` riprende davvero dopo un'interruzione,
+invece di ripartire da zero. Prima stava in una `TemporaryDirectory` cancellata
+all'uscita, e un download interrotto a 2 GB su 3 buttava via tutto.
+
+Prima del merge lo ZIP passa `zipfile.testzip()`: un parziale che sembra
+completo produrrebbe un parquet monco in silenzio.
+
 ## Confine tecnico
 
 - pipeline e dati → questa repo

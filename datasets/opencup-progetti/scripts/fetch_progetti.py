@@ -4,7 +4,13 @@ Output: opencup_progetti.parquet (nella directory corrente)
 Toolkit legge da qui come script source.
 
 Supporta:
-- Resume del download con curl -C - (riprende da dove era)
+- **Cache persistente** dello ZIP in `~/.cache/dataciviclab/opencup/` (override con
+  `OPENCUP_CACHE_DIR`): il `curl -C -` riprende davvero tra un run e l'altro.
+  Prima lo ZIP stava in una `TemporaryDirectory`, cancellata all'uscita: un
+  download interrotto a 2 GB su 3 ripartiva sempre da zero.
+- Retry su qualunque errore (`--retry-all-errors`), non solo HTTP.
+- **Verifica d'integrita'** dello ZIP prima del merge: un parziale che sembra
+  completo produrrebbe un parquet monco in silenzio.
 - Proxy via BLOCKED_SOURCE_PROXY (se configurato)
 - Timeout configurabile (default 3600s)
 
@@ -42,36 +48,52 @@ def fetch_url() -> str:
     return BASE_URL + match.group(1).replace("&amp;", "&")
 
 
+def zip_valido(path: Path) -> bool:
+    """True se lo ZIP si apre e tutti i membri hanno il CRC corretto."""
+    if not path.exists():
+        return False
+    try:
+        with zipfile.ZipFile(path) as z:
+            return z.testzip() is None
+    except (zipfile.BadZipFile, OSError):
+        return False
+
+
 def download_zip(url: str, dest: Path) -> None:
-    """Scarica lo ZIP con resume (curl -C -)."""
+    """Scarica lo ZIP in cache persistente, con resume tra run."""
     import os
     proxy = os.environ.get("BLOCKED_SOURCE_PROXY", "")
 
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if zip_valido(dest):
+        print(f"cache: {dest} ({dest.stat().st_size / 1e6:.0f} MB) integro, skip download")
+        return
+    if dest.exists():
+        print(f"cache parziale/invalida: riparto da {dest.stat().st_size / 1e6:.0f} MB")
+
     cmd = [
         "curl", "-sSL", "--fail",
-        "--retry", "3", "--retry-delay", "5",
-        "-C", "-",  # resume
+        "--retry", "5", "--retry-delay", "10",
+        "--retry-all-errors",  # anche errori di rete, non solo HTTP
+        "-C", "-",  # resume dalla cache
         "-H", f"User-Agent: {UA}",
         "-o", str(dest),
     ]
     if proxy:
         cmd.extend(["-x", proxy])
-
     cmd.append(url)
-
-    # Se il file esiste già e sembra completo, skip
-    if dest.exists() and dest.stat().st_size > 100_000_000:
-        print(f"skip (esiste): {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)")
-        return
 
     print(f"download: {dest.name} ...")
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        # Se il file parziale esiste, fallo vedere
         if dest.exists():
-            print(f"parziale: {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)")
+            print(f"parziale in cache: {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)"
+                  " — il prossimo run riprende da qui")
         sys.exit(f"download fallito (exit {result.returncode}): {result.stderr[:200]}")
 
+    if not zip_valido(dest):
+        dest.unlink(missing_ok=True)
+        sys.exit(f"ZIP corrotto dopo il download ({dest}) — rimosso, riprova")
     print(f"ok: {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)")
 
 
@@ -117,20 +139,22 @@ def main() -> None:
     if proxy:
         print(f"proxy: {proxy[:50]}...")
 
-    import tempfile
-    with tempfile.TemporaryDirectory() as tmp:
-        zip_path = Path(tmp) / ZIP_NAME
+    import os
+    cache_dir = Path(
+        os.environ.get("OPENCUP_CACHE_DIR", Path.home() / ".cache" / "dataciviclab" / "opencup")
+    )
+    zip_path = cache_dir / ZIP_NAME
 
-        print("1. fetch URL dalla pagina Liferay ...")
-        url = fetch_url()
-        print(f"   {url}\n")
+    print("1. fetch URL dalla pagina Liferay ...")
+    url = fetch_url()
+    print(f"   {url}\n")
 
-        print("2. download ZIP (resume-friendly) ...")
-        download_zip(url, zip_path)
-        print()
+    print("2. download ZIP in cache persistente ...")
+    download_zip(url, zip_path)
+    print()
 
-        print("3. merge shard → parquet ...")
-        merge_to_parquet(zip_path, out_path)
+    print("3. merge shard → parquet ...")
+    merge_to_parquet(zip_path, out_path)
 
     print("\nfatto.")
 
