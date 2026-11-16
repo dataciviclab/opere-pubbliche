@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repo": "opere-pubbliche",
   "source_repo": "dataciviclab/opere-pubbliche",
-  "updated_at": "2026-11-15",
+  "updated_at": "2026-11-16",
   "datasets": [
     {
       "slug": "op_cup_lab",
@@ -812,6 +812,16 @@
   ],
   "marts": [
     {
+      "slug": "op_cup_lab__mart_costi",
+      "dataset": "op_cup_lab",
+      "table": "mart_costi",
+      "location": {
+        "type": "gcs",
+        "path": "gs://dataciviclab-mart/opere_pubbliche/op_cup_lab/2026/mart_costi.parquet",
+        "multi_file": false
+      }
+    },
+    {
       "slug": "op_cup_lab__mart_fonti",
       "dataset": "op_cup_lab",
       "table": "mart_fonti",
@@ -931,26 +941,12 @@
       "detail": "anno 2026 — mart: si",
       "action": "",
       "run": {
-        "run_id": "20261115T214835Z_c0e53ec9",
+        "run_id": "20261116T171121Z_2d3ee9dd",
         "year": 2026,
-        "status": "SUCCESS",
-        "quality_score": {
-          "raw": 100,
-          "clean": 95,
-          "mart": 100
-        },
-        "output_rows": {
-          "clean": 12124230,
-          "mart": 24248460
-        },
-        "output_bytes": {
-          "raw": 1475482100,
-          "clean": 518171237,
-          "mart": 1118322859
-        },
-        "started_at": "2026-11-15T21:48:35.353435+00:00",
-        "finished_at": "2026-11-15T22:00:24.377998+00:00",
-        "duration_seconds": 709.025
+        "status": "FAILED",
+        "started_at": "2026-11-16T17:11:21.010508+00:00",
+        "finished_at": "2026-11-16T17:25:32.976519+00:00",
+        "duration_seconds": 851.966
       }
     },
     {
@@ -992,7 +988,7 @@
       "detail": "anno 2026 — mart: si",
       "action": "",
       "run": {
-        "run_id": "20261115T214143Z_43202ca1",
+        "run_id": "20261116T170030Z_cfa21148",
         "year": 2026,
         "status": "SUCCESS",
         "quality_score": {
@@ -1010,9 +1006,9 @@
           "clean": 152682500,
           "mart": 145688888
         },
-        "started_at": "2026-11-15T21:41:43.061707+00:00",
-        "finished_at": "2026-11-15T21:44:20.079319+00:00",
-        "duration_seconds": 157.018
+        "started_at": "2026-11-16T17:00:30.475128+00:00",
+        "finished_at": "2026-11-16T17:04:37.623176+00:00",
+        "duration_seconds": 247.148
       }
     },
     {
@@ -1023,7 +1019,7 @@
       "detail": "anno 2026 — mart: si",
       "action": "",
       "run": {
-        "run_id": "20261115T214421Z_698d5cc5",
+        "run_id": "20261116T170438Z_ad767459",
         "year": 2026,
         "status": "SUCCESS",
         "quality_score": {
@@ -1041,9 +1037,9 @@
           "clean": 193386786,
           "mart": 160533902
         },
-        "started_at": "2026-11-15T21:44:21.407604+00:00",
-        "finished_at": "2026-11-15T21:48:29.018422+00:00",
-        "duration_seconds": 247.611
+        "started_at": "2026-11-16T17:04:38.981179+00:00",
+        "finished_at": "2026-11-16T17:11:12.542337+00:00",
+        "duration_seconds": 393.561
       }
     },
     {
@@ -1054,7 +1050,7 @@
       "detail": "anno 2026 — mart: si",
       "action": "",
       "run": {
-        "run_id": "20261115T214830Z_e069f34f",
+        "run_id": "20261116T171114Z_d355a035",
         "year": 2026,
         "status": "SUCCESS",
         "quality_score": {
@@ -1072,9 +1068,9 @@
           "clean": 2375193,
           "mart": 2375193
         },
-        "started_at": "2026-11-15T21:48:30.058908+00:00",
-        "finished_at": "2026-11-15T21:48:34.883563+00:00",
-        "duration_seconds": 4.825
+        "started_at": "2026-11-16T17:11:14.076399+00:00",
+        "finished_at": "2026-11-16T17:11:20.653378+00:00",
+        "duration_seconds": 6.577
       }
     }
   ],
