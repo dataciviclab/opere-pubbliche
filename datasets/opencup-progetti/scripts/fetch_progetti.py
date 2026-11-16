@@ -84,7 +84,7 @@ def download_zip(url: str, dest: Path) -> None:
     cmd.append(url)
 
     print(f"download: {dest.name} ...")
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         if dest.exists():
             print(f"parziale in cache: {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)"
