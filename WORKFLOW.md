@@ -39,10 +39,25 @@ I compose leggono i clean da altre repo, su GCS:
 - PNRR: `open_pnrr/pnrr_*`
 - OpenCoesione: `open_coesione/opencoesione_progetti_esteso`
 
-`op-cup-lab` non ha un guardiano di freschezza: se la pipeline di
+`op-cup-lab` non ha un guardiano automatico di freschezza: se la pipeline di
 `appalti-pubblici` si ferma, le colonne `anac_*` invecchiano **senza segnale** e
-`min_rows` non aiuta (le righe non cambiano). Controllo: `anac_data_ultima_agg`
-nella tabella `mart_territorio`.
+`min_rows` non aiuta (le righe non cambiano). La data e' esposta nel clean
+(`anac_data_ultima_agg`) e come `MAX` in `mart_territorio`: se non si muove tra
+due run, la fonte a monte e' ferma.
+
+### Attenzione a `anac_importo_aggiudicato`
+
+Dal 2024 ANAC pubblica in `importo_aggiudicazione` una **copia dell'importo a
+base d'asta** (96-98% dei casi, contro il 38-63% del 2007-2023; i ribassi > 0
+scendono da 3-6% a 0,2%). La colonna `anac_importo_aggiudicato` somma quel campo:
+per il **57,7% delle aggiudicazioni (27,5% del valore)** misura quindi la base
+d'asta, non il prezzo. **Non usarla per confronti temporali** ne' come «prezzo
+pagato».
+
+Per i costi dell'opera il clean espone il quadro economico ANAC, omogeneo in
+tutta la serie: `anac_importo_base`, `anac_importo_consuntivo`,
+`anac_scostamento_pct` (NULL dove manca la base, non 0) e `anac_n_varianti_qe`.
+Il mart `mart_costi` li aggrega per regione × settore.
 
 ## Confine tecnico
 

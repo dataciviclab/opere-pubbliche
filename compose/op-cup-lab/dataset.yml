@@ -86,14 +86,19 @@ mart:
       sql: "sql/mart_territorio.sql"
     - name: "mart_fonti"
       sql: "sql/mart_fonti.sql"
+    - name: "mart_costi"
+      sql: "sql/mart_costi.sql"
   required_tables:
     - mart_territorio
     - mart_fonti
+    - mart_costi
   validate:
     table_rules:
       mart_territorio:
         min_rows: 100
       mart_fonti:
+        min_rows: 10
+      mart_costi:
         min_rows: 10
 
 duckdb:

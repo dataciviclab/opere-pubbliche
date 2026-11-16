@@ -25,6 +25,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CLEAN_SQL = REPO_ROOT / "compose" / "op-cup-lab" / "sql" / "clean.sql"
+MART_COSTI = REPO_ROOT / "compose" / "op-cup-lab" / "sql" / "mart_costi.sql"
 
 SENTINEL = "000000000000000"
 
@@ -94,10 +95,26 @@ def test_anac_n_cig_conta_anche_i_cig_senza_aggiudicazione(tmp_path: Path) -> No
         """,
     )
 
+    qe = _parquet(
+        con,
+        tmp_path / "anac_quadro_economico.parquet",
+        """
+        SELECT * FROM (VALUES
+            ('CIG_A', 1, NULL, 'BASE_ASTA',  100.0, 0.0, 0.0),
+            ('CIG_A', 1, DATE '2024-02-01', 'VARIANTE', 110.0, 0.0, 0.0),
+            ('CIG_A', 1, NULL, 'CONSUNTIVO', 120.0, 0.0, 0.0),
+            ('CIG_NOAGG', 9, NULL, 'BASE_ASTA', 50.0, 0.0, 0.0),
+            ('CIG_SENT',  2, NULL, 'BASE_ASTA', 10.0, 0.0, 0.0)
+        ) AS t(cig, id_aggiudicazione, data, descrizione_evento,
+               importo_lavori, importo_servizi, importo_forniture)
+        """,
+    )
+
     path = {
         "anac_cup": cup,
         "anac_aggiudicazioni": agg,
         "anac_stati_avanzamento": sal,
+        "anac_quadro_economico": qe,
         "localizzazione": _vuoto(
             "CAST(NULL AS VARCHAR) AS cup, CAST(NULL AS VARCHAR) AS regione, "
             "CAST(NULL AS VARCHAR) AS provincia, CAST(NULL AS VARCHAR) AS comune, "
@@ -163,6 +180,26 @@ def test_anac_n_cig_conta_anche_i_cig_senza_aggiudicazione(tmp_path: Path) -> No
     assert real["anac_importo_sal"] == 50.0
     assert real["anac_sal_in_ritardo"] == 1, "un solo SAL in ritardo"
 
+    # Costi dal quadro economico: base e consuntivo sommati sui CIG del CUP.
+    # CIG_A (100 base, 120 consuntivo) + CIG_NOAGG (50 base, senza consuntivo).
+    assert real["anac_importo_base"] == 150.0
+    assert real["anac_importo_consuntivo"] == 120.0
+    assert float(real["anac_scostamento_pct"]) == pytest.approx(-20.0), (
+        "lo scostamento e' calcolato sulla base del CUP, non del singolo CIG"
+    )
+    assert real["anac_n_varianti_qe"] == 1
+
+    # mart_costi: aggrega solo i CUP con base d'asta (senza base lo scostamento
+    # non esiste, contarlo come zero falserebbe la media).
+    con.execute("CREATE OR REPLACE VIEW clean_input AS " + sql)
+    # la soglia di 10 CUP per gruppo non ha senso su una fixture da 5
+    mart_sql = MART_COSTI.read_text(encoding="utf-8").replace("HAVING COUNT(*) >= 10", "HAVING COUNT(*) >= 1")
+    mart = con.execute(mart_sql).fetchall()
+    assert mart, "il mart deve produrre almeno un gruppo"
+    # su una fixture da 150 EUR l'aggregato in mld arrotonda a 0: si verifica
+    # il conteggio, l'importo e' gia' asserito sul clean sopra
+    assert mart[0][3] == 2, f"CUP con base contati: {mart[0][3]}"
+
     # 2. il sentinella non ruba il CIG: vale il CUP reale
     sentinel = righe["CUP_SENTINEL_CIG"]
     assert sentinel["anac_n_cig"] == 1
@@ -172,3 +209,4 @@ def test_anac_n_cig_conta_anche_i_cig_senza_aggiudicazione(tmp_path: Path) -> No
     # 3. un CIG con due CUP reali viene contato una volta, sotto MIN(cup)
     assert righe["CUP_MULTI_AA"]["anac_n_cig"] == 1
     assert righe["CUP_MULTI_ZZ"]["anac_n_cig"] == 0
+

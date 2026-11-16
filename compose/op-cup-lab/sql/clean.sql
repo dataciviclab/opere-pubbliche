@@ -86,6 +86,23 @@ anac_sal AS (
     GROUP BY cig
 ),
 
+anac_qe AS (
+    -- Importi del quadro economico per CIG: base d'asta e consuntivo sono
+    -- istantanee cumulative, quindi si prendono i valori per evento, non si
+    -- sommano le righe. Per CUP si somma sui CIG (un CIG = un contratto).
+    SELECT cig,
+           SUM(CASE WHEN descrizione_evento = 'BASE_ASTA'
+                    THEN COALESCE(importo_lavori, 0) + COALESCE(importo_servizi, 0)
+                       + COALESCE(importo_forniture, 0) END) AS importo_base,
+           SUM(CASE WHEN descrizione_evento = 'CONSUNTIVO'
+                    THEN COALESCE(importo_lavori, 0) + COALESCE(importo_servizi, 0)
+                       + COALESCE(importo_forniture, 0) END) AS importo_consuntivo,
+           COUNT(*) FILTER (WHERE descrizione_evento = 'VARIANTE') AS n_varianti_qe
+    FROM read_parquet('{support.anac_quadro_economico.path}')
+    WHERE descrizione_evento IN ('BASE_ASTA', 'CONSUNTIVO', 'VARIANTE')
+    GROUP BY cig
+),
+
 anac AS (
     -- Base: tutti i CIG con un CUP reale (il vecchio compose partiva da
     -- "tutti i CIG noti a una qualunque fonte ANAC", non solo da quelli
@@ -97,10 +114,14 @@ anac AS (
            SUM(COALESCE(g.importo_totale_agg, 0)) AS anac_importo_aggiudicato,
            SUM(COALESCE(sl.n_sal, 0)) AS anac_n_sal,
            SUM(COALESCE(sl.importo_totale_sal, 0)) AS anac_importo_sal,
-           MAX(g.data_ultima_agg) AS anac_data_ultima_agg
+           MAX(g.data_ultima_agg) AS anac_data_ultima_agg,
+           SUM(COALESCE(q.importo_base, 0)) AS anac_importo_base,
+           SUM(COALESCE(q.importo_consuntivo, 0)) AS anac_importo_consuntivo,
+           SUM(COALESCE(q.n_varianti_qe, 0)) AS anac_n_varianti_qe
     FROM anac_cig m
     LEFT JOIN anac_agg g ON m.cig = g.cig
     LEFT JOIN anac_sal sl ON m.cig = sl.cig
+    LEFT JOIN anac_qe q ON m.cig = q.cig
     GROUP BY m.cup
 ),
 
@@ -154,6 +175,16 @@ SELECT
     COALESCE(a.anac_importo_aggiudicato, 0) AS anac_importo_aggiudicato,
     COALESCE(a.anac_n_sal, 0) AS anac_n_sal,
     COALESCE(a.anac_importo_sal, 0) AS anac_importo_sal,
+    -- Costi dell'opera dal quadro economico ANAC: base d'asta e consuntivo per
+    -- CUP. Lo scostamento e' NULL dove manca la base, non 0: assenza di dato.
+    COALESCE(a.anac_importo_base, 0) AS anac_importo_base,
+    COALESCE(a.anac_importo_consuntivo, 0) AS anac_importo_consuntivo,
+    ROUND((a.anac_importo_consuntivo - a.anac_importo_base) * 100.0
+        / NULLIF(a.anac_importo_base, 0), 2) AS anac_scostamento_pct,
+    COALESCE(a.anac_n_varianti_qe, 0) AS anac_n_varianti_qe,
+    -- Freschezza della fonte ANAC: se non si muove tra due run, la pipeline a
+    -- monte e' ferma (min_rows non lo vede, le righe non cambiano).
+    a.anac_data_ultima_agg,
     COALESCE(sr.n_ritardo, 0) AS anac_sal_in_ritardo,
     CASE WHEN COALESCE(a.anac_n_cig, 0) >= 50 THEN true ELSE false END AS flag_ombrello,
     COALESCE(oc.coe_n_progetti, 0) AS coe_n_progetti,
