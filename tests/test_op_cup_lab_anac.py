@@ -107,7 +107,7 @@ def test_anac_n_cig_conta_anche_i_cig_senza_aggiudicazione(tmp_path: Path) -> No
             ('CIG_A', 1, NULL, 'CONSUNTIVO', 'C1', 120.0, 0.0, 0.0),
             ('CIG_NOAGG', 9, NULL, 'BASE_ASTA', 'B9', 50.0, 0.0, 0.0),
             ('CIG_SENT',  2, NULL, 'BASE_ASTA', 'B2', 10.0, 0.0, 0.0),
-            ('CIG_ABS',   7, NULL, 'BASE_ASTA', 'B7', 2000000000.0, 0.0, 0.0)
+            ('CIG_ABS',   7, NULL, 'BASE_ASTA', 'B7', 20000000000.0, 0.0, 0.0)
         ) AS t(cig, id_aggiudicazione, data, descrizione_evento, dettaglio_evento,
                importo_lavori, importo_servizi, importo_forniture)
         """,
@@ -190,9 +190,12 @@ def test_anac_n_cig_conta_anche_i_cig_senza_aggiudicazione(tmp_path: Path) -> No
     assert real["anac_importo_consuntivo"] == 120.0
     assert real["anac_n_cig_con_base"] == 2
     assert real["anac_n_cig_con_consuntivo"] == 1
-    assert float(real["anac_scostamento_pct"]) == pytest.approx(-20.0), (
-        "lo scostamento e' calcolato sulla base del CUP, non del singolo CIG"
-    )
+    # scostamento sugli APPAIATI: solo CIG_A (base 100, consuntivo 120).
+    # Senza pairing sarebbe (120-150)/150 = -20%: il consuntivo di un CIG
+    # diviso per la base di due, cioe' "i costi sono calati" per costruzione.
+    assert real["anac_n_cig_appaiati"] == 1
+    assert real["anac_importo_base_appaiata"] == 100.0
+    assert float(real["anac_scostamento_pct"]) == pytest.approx(20.0)
     assert real["anac_n_varianti_qe"] == 1
 
     # CUP con base ma senza alcun consuntivo: NULL, non -100%.

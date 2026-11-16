@@ -109,19 +109,37 @@ anac_qe AS (
                 + COALESCE(importo_forniture, 0) AS importo
         FROM read_parquet('{support.anac_quadro_economico.path}')
         WHERE descrizione_evento IN ('BASE_ASTA', 'CONSUNTIVO', 'VARIANTE')
+    ),
+    per_cig AS (
+        SELECT
+            cig,
+            SUM(importo) FILTER (WHERE descrizione_evento = 'BASE_ASTA') AS importo_base,
+            SUM(importo) FILTER (WHERE descrizione_evento = 'CONSUNTIVO') AS importo_consuntivo,
+            -- varianti distinte: `dettaglio_evento` e' l'id della variante, la
+            -- stessa puo' essere ripubblicata da piu' risorse
+            COUNT(DISTINCT dettaglio_evento) FILTER (WHERE descrizione_evento = 'VARIANTE')
+                AS n_varianti_qe
+        FROM eventi
+        GROUP BY cig
     )
     SELECT
         cig,
-        SUM(importo) FILTER (WHERE descrizione_evento = 'BASE_ASTA') AS importo_base,
-        SUM(importo) FILTER (WHERE descrizione_evento = 'CONSUNTIVO') AS importo_consuntivo,
-        -- varianti distinte: `dettaglio_evento` e' l'id della variante, la
-        -- stessa puo' essere ripubblicata da piu' risorse
-        COUNT(DISTINCT dettaglio_evento) FILTER (WHERE descrizione_evento = 'VARIANTE')
-            AS n_varianti_qe,
-        COALESCE(SUM(importo) FILTER (WHERE descrizione_evento = 'BASE_ASTA') >= 1000000000,
-                 FALSE) AS base_sospetta
-    FROM eventi
-    GROUP BY cig
+        importo_base,
+        importo_consuntivo,
+        n_varianti_qe,
+        -- coppia appaiata: base e consuntivo dello STESSO CIG. Lo scostamento
+        -- e' un rapporto e va calcolato su chi ha entrambi i termini: sui CUP
+        -- parziali (alcuni CIG con consuntivo, altri no) il rapporto e'
+        -- strutturalmente negativo e falsa la mediana.
+        CASE WHEN importo_base IS NOT NULL AND importo_consuntivo IS NOT NULL
+             THEN importo_base END AS base_appaiata,
+        CASE WHEN importo_base IS NOT NULL AND importo_consuntivo IS NOT NULL
+             THEN importo_consuntivo END AS cons_appaiato,
+        -- 10 mld su un singolo contratto e' il limite dell'assurdo (la fonte
+        -- arriva a 1e73); 1 mld e' solo "opera grande": resta, ma segnalato.
+        COALESCE(importo_base >= 10000000000, FALSE) AS base_sospetta,
+        COALESCE(importo_base >= 1000000000, FALSE) AS base_grande
+    FROM per_cig
 ),
 
 anac AS (
@@ -136,18 +154,31 @@ anac AS (
            SUM(COALESCE(sl.n_sal, 0)) AS anac_n_sal,
            SUM(COALESCE(sl.importo_totale_sal, 0)) AS anac_importo_sal,
            MAX(g.data_ultima_agg) AS anac_data_ultima_agg,
-           COUNT(DISTINCT m.cig) FILTER (WHERE q.importo_base IS NOT NULL)
-               AS anac_n_cig_con_base,
-           COUNT(DISTINCT m.cig) FILTER (WHERE q.importo_consuntivo IS NOT NULL)
-               AS anac_n_cig_con_consuntivo,
+           -- contatori coerenti con gli importi: stessi filtri
+           COUNT(DISTINCT m.cig) FILTER (
+               WHERE q.importo_base IS NOT NULL AND NOT COALESCE(q.base_sospetta, FALSE)
+           ) AS anac_n_cig_con_base,
+           COUNT(DISTINCT m.cig) FILTER (
+               WHERE q.importo_consuntivo IS NOT NULL AND NOT COALESCE(q.base_sospetta, FALSE)
+           ) AS anac_n_cig_con_consuntivo,
+           COUNT(DISTINCT m.cig) FILTER (
+               WHERE q.base_appaiata IS NOT NULL AND NOT COALESCE(q.base_sospetta, FALSE)
+           ) AS anac_n_cig_appaiati,
            COUNT(*) FILTER (WHERE q.base_sospetta) AS anac_n_cig_base_sospetta,
+           COUNT(*) FILTER (WHERE q.base_grande) AS anac_n_cig_base_grande,
            -- gli importi sospetti restano fuori dalle somme: il CUP resta nel
            -- clean con `anac_base_sospetta`, cosi' l'esclusione e' verificabile
            SUM(q.importo_base) FILTER (WHERE NOT COALESCE(q.base_sospetta, FALSE))
                AS anac_importo_base,
            SUM(q.importo_consuntivo) FILTER (WHERE NOT COALESCE(q.base_sospetta, FALSE))
                AS anac_importo_consuntivo,
-           SUM(COALESCE(q.n_varianti_qe, 0)) AS anac_n_varianti_qe
+           SUM(q.base_appaiata) FILTER (WHERE NOT COALESCE(q.base_sospetta, FALSE))
+               AS anac_importo_base_appaiata,
+           SUM(q.cons_appaiato) FILTER (WHERE NOT COALESCE(q.base_sospetta, FALSE))
+               AS anac_importo_consuntivo_appaiato,
+           SUM(q.n_varianti_qe) FILTER (
+               WHERE q.importo_base IS NOT NULL AND NOT COALESCE(q.base_sospetta, FALSE)
+           ) AS anac_n_varianti_qe
     FROM anac_cig m
     LEFT JOIN anac_agg g ON m.cig = g.cig
     LEFT JOIN anac_sal sl ON m.cig = sl.cig
@@ -211,12 +242,20 @@ SELECT
     -- consuntivo (2/3 dei CUP). Lo scostamento esiste solo con entrambi.
     a.anac_importo_base,
     a.anac_importo_consuntivo,
+    a.anac_importo_base_appaiata,
+    a.anac_importo_consuntivo_appaiato,
     COALESCE(a.anac_n_cig_con_base, 0) AS anac_n_cig_con_base,
     COALESCE(a.anac_n_cig_con_consuntivo, 0) AS anac_n_cig_con_consuntivo,
+    COALESCE(a.anac_n_cig_appaiati, 0) AS anac_n_cig_appaiati,
+    COALESCE(a.anac_n_cig_base_sospetta, 0) AS anac_n_cig_base_sospetta,
+    COALESCE(a.anac_n_cig_base_grande, 0) AS anac_n_cig_base_grande,
     COALESCE(a.anac_n_cig_base_sospetta, 0) > 0 AS anac_base_sospetta,
-    CASE WHEN a.anac_importo_base > 0 AND a.anac_importo_consuntivo IS NOT NULL
-         THEN ROUND((a.anac_importo_consuntivo - a.anac_importo_base) * 100.0
-                    / NULLIF(a.anac_importo_base, 0), 2) END AS anac_scostamento_pct,
+    -- scostamento su base e consuntivo APPAIATI (stessi CIG): su un CUP
+    -- parziale il rapporto "consuntivo di parte / base di tutti" sarebbe
+    -- strutturalmente negativo.
+    CASE WHEN a.anac_importo_base_appaiata > 0
+         THEN ROUND((a.anac_importo_consuntivo_appaiato - a.anac_importo_base_appaiata)
+                    * 100.0 / a.anac_importo_base_appaiata, 2) END AS anac_scostamento_pct,
     COALESCE(a.anac_n_varianti_qe, 0) AS anac_n_varianti_qe,
     -- Freschezza della fonte ANAC: se non si muove tra due run, la pipeline a
     -- monte e' ferma (min_rows non lo vede, le righe non cambiano).

@@ -68,11 +68,21 @@ non un dato additivo:
    costati zero» — sarebbe uno scostamento del -100% per la maggior parte dei CUP.
    `anac_n_cig_con_base` / `anac_n_cig_con_consuntivo` dicono su quanti CIG e'
    calcolato.
-2. **Base >= 1 mld su un singolo CIG = sospetta** (`anac_base_sospetta`). La
+2. **Lo scostamento si calcola sui CIG appaiati.** Base e consuntivo devono
+   essere dello **stesso** CIG: su un CUP parziale (alcuni CIG con consuntivo,
+   altri no) «consuntivo di parte / base di tutti» e' strutturalmente negativo.
+   Da qui `anac_importo_base_appaiata`, `anac_importo_consuntivo_appaiato`,
+   `anac_n_cig_appaiati`; `mart_costi` dichiara `n_cup_con_base`,
+   `n_cup_con_scostamento` e `n_cup_parziali`. Senza pairing la mediana scende
+   da −3,5% a −7,3% e il totale da −12,1 mld a −117,7 mld: due numeri diversi
+   per lo stesso fenomeno.
+3. **Base >= 10 mld su un singolo CIG = sospetta** (`anac_base_sospetta`). La
    fonte ha importi fino a 1e73: senza guardia due CUP valgono 16 mila miliardi.
    Gli importi sospetti restano fuori dalle somme, la riga resta visibile con il
-   flag.
-3. **Questa non e' la stessa cosa di `mart_sforamento` in appalti-pubblici.**
+   flag. La soglia e' 10 mld e non 1 mld perche' qui l'importo e' il *contratto*,
+   non il lotto: 1 mld e' un'opera grande plausibile, non un refuso — quelli
+   restano contati in `anac_n_cig_base_grande`.
+4. **Questa non e' la stessa cosa di `mart_sforamento` in appalti-pubblici.**
    Qui si somma per CUP su tutti gli eventi (`COALESCE` sui componenti);
    `mart_cig`/`mart_sforamento` sommano per CIG **senza** `COALESCE`, quindi su
    una fetta piu' stretta (il 62,3% delle righe di `BASE_ASTA` ha almeno un
