@@ -10,6 +10,7 @@ per buono.
 from __future__ import annotations
 
 import importlib.util
+import subprocess
 import zipfile
 from pathlib import Path
 
@@ -61,3 +62,54 @@ def test_marker_non_salva_uno_zip_troncato(tmp_path: Path) -> None:
 
     path.write_bytes(path.read_bytes()[: path.stat().st_size // 2])
     assert modulo.zip_valido(path) is False
+
+
+@pytest.mark.regression
+def test_download_diretto_prima_del_proxy(tmp_path: Path, monkeypatch) -> None:
+    """Il proxy e' un ripiego, non il percorso di default.
+
+    Il 2026-11-16 la pipeline e' morta con `curl: (28)` perche' il proxy non
+    raggiungeva opencup.gov.it, mentre la connessione diretta funzionava: la
+    richiesta andava *sempre* con `-x`.
+    """
+    monkeypatch.setenv("BLOCKED_SOURCE_PROXY", "http://proxy.example:3128")
+    modulo = _modulo()
+
+    chiamate: list[list[str]] = []
+
+    def _fake_run(cmd, **kwargs):
+        chiamate.append(list(cmd))
+        # il primo tentativo (diretto) fallisce, il secondo (proxy) produce lo ZIP
+        if len(chiamate) == 1:
+            return subprocess.CompletedProcess(cmd, 28, "", "Failed to connect")
+        out = cmd[cmd.index("-o") + 1]
+        with zipfile.ZipFile(out, "w") as z:
+            z.writestr("a.csv", "x;y\n1;2\n")
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    monkeypatch.setattr(modulo.subprocess, "run", _fake_run)
+
+    dest = tmp_path / "cache" / "OpendataProgetti.zip"
+    modulo.download_zip("https://www.opencup.gov.it/x.zip", dest)
+
+    assert len(chiamate) == 2, f"attesi due tentativi, trovati {len(chiamate)}"
+    assert "-x" not in chiamate[0], "il primo tentativo deve essere diretto"
+    assert "-x" in chiamate[1], "il ripiego passa dal proxy"
+    assert chiamate[1][chiamate[1].index("-x") + 1] == "http://proxy.example:3128"
+    assert dest.exists() and dest.stat().st_size > 0
+
+
+@pytest.mark.regression
+def test_senza_proxy_un_solo_tentativo(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.delenv("BLOCKED_SOURCE_PROXY", raising=False)
+    modulo = _modulo()
+    chiamate: list[list[str]] = []
+
+    def _fake_run(cmd, **kwargs):
+        chiamate.append(list(cmd))
+        return subprocess.CompletedProcess(cmd, 28, "", "Failed to connect")
+
+    monkeypatch.setattr(modulo.subprocess, "run", _fake_run)
+    with pytest.raises(SystemExit):
+        modulo.download_zip("https://www.opencup.gov.it/x.zip", tmp_path / "x.zip")
+    assert len(chiamate) == 1
