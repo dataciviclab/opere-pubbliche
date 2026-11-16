@@ -58,6 +58,10 @@ support:
     uri: "https://storage.googleapis.com/dataciviclab-clean/appalti_pubblici/anac_aggiudicazioni/{year}/anac_aggiudicazioni_{year}_clean.parquet"
     years: [2026]
   - type: external
+    name: anac_quadro_economico
+    uri: "https://storage.googleapis.com/dataciviclab-clean/appalti_pubblici/anac_quadro_economico/{year}/anac_quadro_economico_{year}_clean.parquet"
+    years: [2026]
+  - type: external
     name: anac_stati_avanzamento
     uri: "https://storage.googleapis.com/dataciviclab-clean/appalti_pubblici/anac_stati_avanzamento/{year}/anac_stati_avanzamento_{year}_clean.parquet"
     years: [2026]
@@ -86,14 +90,19 @@ mart:
       sql: "sql/mart_territorio.sql"
     - name: "mart_fonti"
       sql: "sql/mart_fonti.sql"
+    - name: "mart_costi"
+      sql: "sql/mart_costi.sql"
   required_tables:
     - mart_territorio
     - mart_fonti
+    - mart_costi
   validate:
     table_rules:
       mart_territorio:
         min_rows: 100
       mart_fonti:
+        min_rows: 10
+      mart_costi:
         min_rows: 10
 
 duckdb:

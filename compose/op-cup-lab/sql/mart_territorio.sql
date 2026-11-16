@@ -16,7 +16,8 @@ SELECT
     SUM(CASE WHEN coe_n_progetti > 0 THEN 1 ELSE 0 END) AS n_con_coesione,
     ROUND(SUM(pnrr_fin_pnrr) / 1e9, 3) AS pnrr_fin_mld,
     ROUND(SUM(anac_importo_aggiudicato) / 1e9, 3) AS anac_importo_mld,
-    SUM(CASE WHEN flag_ombrello THEN 1 ELSE 0 END) AS n_ombrello
+    SUM(CASE WHEN flag_ombrello THEN 1 ELSE 0 END) AS n_ombrello,
+    MAX(anac_data_ultima_agg) AS anac_data_ultima_agg
 FROM clean_input
 GROUP BY 1, 2, 3, 4
 HAVING COUNT(*) >= 10

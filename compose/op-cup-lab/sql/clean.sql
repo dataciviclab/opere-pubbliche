@@ -86,6 +86,67 @@ anac_sal AS (
     GROUP BY cig
 ),
 
+anac_qe AS (
+    -- Importi del quadro economico per CIG. Sono istantanee cumulative: si
+    -- prendono i valori per evento, non si sommano le righe.
+    --
+    -- `importo_base` e `importo_consuntivo` restano NULL quando l'evento non
+    -- c'e': per un CUP significhera' "non lo sappiamo". Sommarli come zero
+    -- direbbe che i lavori sono costati zero, ed e' l'errore che questa CTE
+    -- deve evitare (la base c'e' quasi sempre, il consuntivo in un terzo dei
+    -- CUP).
+    --
+    -- `base_sospetta`: importo a base >= 1 mld su un singolo CIG. La fonte ha
+    -- una coda di importi assurdi (il massimo nel clean e' 6,0e73): senza
+    -- guardia due CUP valgono 16 mila miliardi e dominano i totali. Stessa
+    -- disciplina di `flag_importo_sospetto` nei bandi.
+    WITH eventi AS (
+        SELECT
+            cig,
+            descrizione_evento,
+            dettaglio_evento,
+            COALESCE(importo_lavori, 0) + COALESCE(importo_servizi, 0)
+                + COALESCE(importo_forniture, 0) AS importo
+        FROM read_parquet('{support.anac_quadro_economico.path}')
+        WHERE descrizione_evento IN ('BASE_ASTA', 'CONSUNTIVO', 'VARIANTE')
+    ),
+    per_cig AS (
+        SELECT
+            cig,
+            SUM(importo) FILTER (WHERE descrizione_evento = 'BASE_ASTA') AS importo_base,
+            SUM(importo) FILTER (WHERE descrizione_evento = 'CONSUNTIVO') AS importo_consuntivo,
+            -- varianti distinte: `dettaglio_evento` e' l'id della variante, la
+            -- stessa puo' essere ripubblicata da piu' risorse
+            COUNT(DISTINCT dettaglio_evento) FILTER (WHERE descrizione_evento = 'VARIANTE')
+                AS n_varianti_qe
+        FROM eventi
+        GROUP BY cig
+    )
+    SELECT
+        cig,
+        importo_base,
+        importo_consuntivo,
+        n_varianti_qe,
+        -- coppia appaiata: base e consuntivo dello STESSO CIG. Lo scostamento
+        -- e' un rapporto e va calcolato su chi ha entrambi i termini: sui CUP
+        -- parziali (alcuni CIG con consuntivo, altri no) il rapporto e'
+        -- strutturalmente negativo e falsa la mediana.
+        -- Un consuntivo registrato a 0 non e' una misura, e' un segnaposto:
+        -- trattarlo come valore produce uno scostamento del -100%.
+        COALESCE(importo_consuntivo = 0, FALSE) AS consuntivo_zero,
+        -- `> 0` su entrambi: una base a zero aggiungerebbe numeratore senza
+        -- denominatore (1.330 CIG nella fonte)
+        CASE WHEN importo_base > 0 AND importo_consuntivo > 0
+             THEN importo_base END AS base_appaiata,
+        CASE WHEN importo_base > 0 AND importo_consuntivo > 0
+             THEN importo_consuntivo END AS cons_appaiato,
+        -- 10 mld su un singolo contratto e' il limite dell'assurdo (la fonte
+        -- arriva a 1e73); 1 mld e' solo "opera grande": resta, ma segnalato.
+        COALESCE(importo_base >= 10000000000, FALSE) AS base_sospetta,
+        COALESCE(importo_base >= 1000000000, FALSE) AS base_grande
+    FROM per_cig
+),
+
 anac AS (
     -- Base: tutti i CIG con un CUP reale (il vecchio compose partiva da
     -- "tutti i CIG noti a una qualunque fonte ANAC", non solo da quelli
@@ -97,10 +158,37 @@ anac AS (
            SUM(COALESCE(g.importo_totale_agg, 0)) AS anac_importo_aggiudicato,
            SUM(COALESCE(sl.n_sal, 0)) AS anac_n_sal,
            SUM(COALESCE(sl.importo_totale_sal, 0)) AS anac_importo_sal,
-           MAX(g.data_ultima_agg) AS anac_data_ultima_agg
+           MAX(g.data_ultima_agg) AS anac_data_ultima_agg,
+           -- contatori coerenti con gli importi: stessi filtri
+           COUNT(DISTINCT m.cig) FILTER (
+               WHERE q.importo_base > 0 AND NOT COALESCE(q.base_sospetta, FALSE)
+           ) AS anac_n_cig_con_base,
+           COUNT(DISTINCT m.cig) FILTER (
+               WHERE q.importo_consuntivo IS NOT NULL AND NOT COALESCE(q.base_sospetta, FALSE)
+           ) AS anac_n_cig_con_consuntivo,
+           COUNT(DISTINCT m.cig) FILTER (
+               WHERE q.base_appaiata IS NOT NULL AND NOT COALESCE(q.base_sospetta, FALSE)
+           ) AS anac_n_cig_appaiati,
+           COUNT(*) FILTER (WHERE q.base_sospetta) AS anac_n_cig_base_sospetta,
+           COUNT(*) FILTER (WHERE q.base_grande) AS anac_n_cig_base_grande,
+           COUNT(*) FILTER (WHERE q.consuntivo_zero) AS anac_n_cig_consuntivo_zero,
+           -- gli importi sospetti restano fuori dalle somme: il CUP resta nel
+           -- clean con `anac_base_sospetta`, cosi' l'esclusione e' verificabile
+           SUM(q.importo_base) FILTER (WHERE NOT COALESCE(q.base_sospetta, FALSE))
+               AS anac_importo_base,
+           SUM(q.importo_consuntivo) FILTER (WHERE NOT COALESCE(q.base_sospetta, FALSE))
+               AS anac_importo_consuntivo,
+           SUM(q.base_appaiata) FILTER (WHERE NOT COALESCE(q.base_sospetta, FALSE))
+               AS anac_importo_base_appaiata,
+           SUM(q.cons_appaiato) FILTER (WHERE NOT COALESCE(q.base_sospetta, FALSE))
+               AS anac_importo_consuntivo_appaiato,
+           SUM(q.n_varianti_qe) FILTER (
+               WHERE q.importo_base IS NOT NULL AND NOT COALESCE(q.base_sospetta, FALSE)
+           ) AS anac_n_varianti_qe
     FROM anac_cig m
     LEFT JOIN anac_agg g ON m.cig = g.cig
     LEFT JOIN anac_sal sl ON m.cig = sl.cig
+    LEFT JOIN anac_qe q ON m.cig = q.cig
     GROUP BY m.cup
 ),
 
@@ -154,6 +242,31 @@ SELECT
     COALESCE(a.anac_importo_aggiudicato, 0) AS anac_importo_aggiudicato,
     COALESCE(a.anac_n_sal, 0) AS anac_n_sal,
     COALESCE(a.anac_importo_sal, 0) AS anac_importo_sal,
+    -- Costi dell'opera dal quadro economico ANAC. NULL = dato assente, mai 0:
+    -- `anac_importo_base` manca se nessun CIG del CUP ha la base o se una base
+    -- e' sospetta; `anac_importo_consuntivo` manca se nessun CIG ha il
+    -- consuntivo (2/3 dei CUP). Lo scostamento esiste solo con entrambi.
+    a.anac_importo_base,
+    a.anac_importo_consuntivo,
+    a.anac_importo_base_appaiata,
+    a.anac_importo_consuntivo_appaiato,
+    COALESCE(a.anac_n_cig_con_base, 0) AS anac_n_cig_con_base,
+    COALESCE(a.anac_n_cig_con_consuntivo, 0) AS anac_n_cig_con_consuntivo,
+    COALESCE(a.anac_n_cig_appaiati, 0) AS anac_n_cig_appaiati,
+    COALESCE(a.anac_n_cig_base_sospetta, 0) AS anac_n_cig_base_sospetta,
+    COALESCE(a.anac_n_cig_consuntivo_zero, 0) AS anac_n_cig_consuntivo_zero,
+    COALESCE(a.anac_n_cig_base_grande, 0) AS anac_n_cig_base_grande,
+    COALESCE(a.anac_n_cig_base_sospetta, 0) > 0 AS anac_base_sospetta,
+    -- scostamento su base e consuntivo APPAIATI (stessi CIG): su un CUP
+    -- parziale il rapporto "consuntivo di parte / base di tutti" sarebbe
+    -- strutturalmente negativo.
+    CASE WHEN a.anac_importo_base_appaiata > 0
+         THEN ROUND((a.anac_importo_consuntivo_appaiato - a.anac_importo_base_appaiata)
+                    * 100.0 / a.anac_importo_base_appaiata, 2) END AS anac_scostamento_pct,
+    COALESCE(a.anac_n_varianti_qe, 0) AS anac_n_varianti_qe,
+    -- Freschezza della fonte ANAC: se non si muove tra due run, la pipeline a
+    -- monte e' ferma (min_rows non lo vede, le righe non cambiano).
+    a.anac_data_ultima_agg,
     COALESCE(sr.n_ritardo, 0) AS anac_sal_in_ritardo,
     CASE WHEN COALESCE(a.anac_n_cig, 0) >= 50 THEN true ELSE false END AS flag_ombrello,
     COALESCE(oc.coe_n_progetti, 0) AS coe_n_progetti,

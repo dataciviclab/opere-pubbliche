@@ -25,6 +25,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CLEAN_SQL = REPO_ROOT / "compose" / "op-cup-lab" / "sql" / "clean.sql"
+MART_COSTI = REPO_ROOT / "compose" / "op-cup-lab" / "sql" / "mart_costi.sql"
 
 SENTINEL = "000000000000000"
 
@@ -50,7 +51,8 @@ def test_anac_n_cig_conta_anche_i_cig_senza_aggiudicazione(tmp_path: Path) -> No
             ('CUP_REAL',          2020, 'ATTIVO', 1.0, 0.001, 1.0, 'SA', 'LAVORI', 'd', FALSE, FALSE),
             ('CUP_SENTINEL_CIG',  2020, 'ATTIVO', 1.0, 0.001, 1.0, 'SA', 'LAVORI', 'd', FALSE, FALSE),
             ('CUP_MULTI_AA',      2020, 'ATTIVO', 1.0, 0.001, 1.0, 'SA', 'LAVORI', 'd', FALSE, FALSE),
-            ('CUP_MULTI_ZZ',      2020, 'ATTIVO', 1.0, 0.001, 1.0, 'SA', 'LAVORI', 'd', FALSE, FALSE)
+            ('CUP_MULTI_ZZ',      2020, 'ATTIVO', 1.0, 0.001, 1.0, 'SA', 'LAVORI', 'd', FALSE, FALSE),
+            ('CUP_SOSPETTO',      2020, 'ATTIVO', 1.0, 0.001, 1.0, 'SA', 'LAVORI', 'd', FALSE, FALSE)
         ) AS t(cup, anno_decisione, stato_progetto, costo_progetto, costo_mld,
                finanziamento_progetto, soggetto_titolare, settore_intervento,
                descrizione_intervento, flag_chiuso, flag_sub_progetto)
@@ -64,10 +66,12 @@ def test_anac_n_cig_conta_anche_i_cig_senza_aggiudicazione(tmp_path: Path) -> No
         SELECT * FROM (VALUES
             ('CIG_A',     'CUP_REAL'),
             ('CIG_NOAGG', 'CUP_REAL'),
+            ('CIG_ZERO',  'CUP_REAL'),
             ('CIG_SENT',  '{SENTINEL}'),
             ('CIG_SENT',  'CUP_SENTINEL_CIG'),
             ('CIG_MULTI', 'CUP_MULTI_ZZ'),
-            ('CIG_MULTI', 'CUP_MULTI_AA')
+            ('CIG_MULTI', 'CUP_MULTI_AA'),
+            ('CIG_ABS',   'CUP_SOSPETTO')
         ) AS t(cig, cup)
         """,
     )
@@ -94,10 +98,29 @@ def test_anac_n_cig_conta_anche_i_cig_senza_aggiudicazione(tmp_path: Path) -> No
         """,
     )
 
+    qe = _parquet(
+        con,
+        tmp_path / "anac_quadro_economico.parquet",
+        """
+        SELECT * FROM (VALUES
+            ('CIG_A', 1, NULL, 'BASE_ASTA',  'B1', 100.0, 0.0, 0.0),
+            ('CIG_A', 1, DATE '2024-02-01', 'VARIANTE', 'V1', 110.0, 0.0, 0.0),
+            ('CIG_A', 1, NULL, 'CONSUNTIVO', 'C1', 120.0, 0.0, 0.0),
+            ('CIG_NOAGG', 9, NULL, 'BASE_ASTA', 'B9', 50.0, 0.0, 0.0),
+            ('CIG_ZERO',  8, NULL, 'BASE_ASTA', 'B8', 0.0, 0.0, 0.0),
+            ('CIG_ZERO',  8, NULL, 'CONSUNTIVO', 'C8', 30.0, 0.0, 0.0),
+            ('CIG_SENT',  2, NULL, 'BASE_ASTA', 'B2', 10.0, 0.0, 0.0),
+            ('CIG_ABS',   7, NULL, 'BASE_ASTA', 'B7', 20000000000.0, 0.0, 0.0)
+        ) AS t(cig, id_aggiudicazione, data, descrizione_evento, dettaglio_evento,
+               importo_lavori, importo_servizi, importo_forniture)
+        """,
+    )
+
     path = {
         "anac_cup": cup,
         "anac_aggiudicazioni": agg,
         "anac_stati_avanzamento": sal,
+        "anac_quadro_economico": qe,
         "localizzazione": _vuoto(
             "CAST(NULL AS VARCHAR) AS cup, CAST(NULL AS VARCHAR) AS regione, "
             "CAST(NULL AS VARCHAR) AS provincia, CAST(NULL AS VARCHAR) AS comune, "
@@ -156,12 +179,53 @@ def test_anac_n_cig_conta_anche_i_cig_senza_aggiudicazione(tmp_path: Path) -> No
 
     # 1. il CIG senza aggiudicazione conta: 2 CIG sotto CUP_REAL, 1 gara sola
     real = righe["CUP_REAL"]
-    assert real["anac_n_cig"] == 2, "il CIG senza aggiudicazione conta in anac_n_cig"
+    assert real["anac_n_cig"] == 3, "i CIG senza aggiudicazione (e con base zero) contano in anac_n_cig"
     assert real["anac_n_gare"] == 1, "ma non genera gare"
     assert real["anac_importo_aggiudicato"] == 100.0
     assert real["anac_n_sal"] == 2, "n_sal conta tutte le righe SAL del CIG"
     assert real["anac_importo_sal"] == 50.0
     assert real["anac_sal_in_ritardo"] == 1, "un solo SAL in ritardo"
+
+    # Costi dal quadro economico: CIG_A (100 base, 120 consuntivo) +
+    # CIG_NOAGG (50 base, nessun consuntivo). Il consuntivo esiste per il CUP
+    # perche' almeno un CIG ce l'ha.
+    assert real["anac_importo_base"] == 150.0
+    assert real["anac_importo_consuntivo"] == 150.0, "120 di CIG_A + 30 di CIG_ZERO"
+    assert real["anac_n_cig_con_base"] == 2, "la base a zero non conta come base"
+    assert real["anac_n_cig_con_consuntivo"] == 2, "CIG_A e CIG_ZERO hanno un consuntivo"
+    # scostamento sugli APPAIATI: solo CIG_A (base 100, consuntivo 120).
+    # Senza pairing sarebbe (120-150)/150 = -20%: il consuntivo di un CIG
+    # diviso per la base di due, cioe' "i costi sono calati" per costruzione.
+    assert real["anac_n_cig_appaiati"] == 1
+    assert real["anac_importo_base_appaiata"] == 100.0
+    assert float(real["anac_scostamento_pct"]) == pytest.approx(20.0)
+    assert real["anac_n_varianti_qe"] == 1
+
+    # CUP con base ma senza alcun consuntivo: NULL, non -100%.
+    senza_cons = righe["CUP_SENTINEL_CIG"]
+    assert senza_cons["anac_importo_base"] == 10.0
+    assert senza_cons["anac_importo_consuntivo"] is None, (
+        "nessun CIG del CUP ha il consuntivo: il dato non esiste, non vale zero"
+    )
+    assert senza_cons["anac_scostamento_pct"] is None
+
+    # CUP con una base assurda (2 mld su un CIG): importi fuori, flag dentro.
+    sospetto = righe["CUP_SOSPETTO"]
+    assert sospetto["anac_base_sospetta"] is True
+    assert sospetto["anac_importo_base"] is None, "la base sospetta non entra nelle somme"
+
+    # mart_costi: aggrega solo i CUP con base d'asta (senza base lo scostamento
+    # non esiste, contarlo come zero falserebbe la media).
+    con.execute("CREATE OR REPLACE VIEW clean_input AS " + sql)
+    # la soglia di 10 CUP per gruppo non ha senso su una fixture da 5
+    mart_sql = MART_COSTI.read_text(encoding="utf-8").replace("HAVING COUNT(*) FILTER (WHERE anac_importo_base > 0) >= 10",
+                                      "HAVING COUNT(*) FILTER (WHERE anac_importo_base > 0) >= 1")
+    mart = con.execute(mart_sql).fetchall()
+    assert mart, "il mart deve produrre almeno un gruppo"
+    # su una fixture da 150 EUR l'aggregato in mld arrotonda a 0: si verificano
+    # le due popolazioni, gli importi sono gia' asseriti sul clean sopra
+    assert mart[0][3] == 2, f"CUP con base contati: {mart[0][3]}"
+    assert mart[0][5] == 1, f"CUP con scostamento calcolabile: {mart[0][5]}"
 
     # 2. il sentinella non ruba il CIG: vale il CUP reale
     sentinel = righe["CUP_SENTINEL_CIG"]
@@ -172,3 +236,4 @@ def test_anac_n_cig_conta_anche_i_cig_senza_aggiudicazione(tmp_path: Path) -> No
     # 3. un CIG con due CUP reali viene contato una volta, sotto MIN(cup)
     assert righe["CUP_MULTI_AA"]["anac_n_cig"] == 1
     assert righe["CUP_MULTI_ZZ"]["anac_n_cig"] == 0
+
