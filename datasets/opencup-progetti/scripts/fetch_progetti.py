@@ -12,7 +12,7 @@ Supporta:
 - **Verifica d'integrita'** dello ZIP prima del merge: un parziale che sembra
   completo produrrebbe un parquet monco in silenzio. Un marker `.ok` (firma
   dimensione+mtime) evita di ri-testare 3 GB a ogni run dalla cache.
-- Proxy via BLOCKED_SOURCE_PROXY (se configurato)
+- Proxy `BLOCKED_SOURCE_PROXY` come **ripiego** (prima il tentativo diretto)
 - Timeout configurabile (default 3600s)
 
 Uso: python3 scripts/fetch_progetti.py
@@ -20,6 +20,7 @@ Uso: python3 scripts/fetch_progetti.py
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -78,9 +79,32 @@ def zip_valido(path: Path) -> bool:
     return True
 
 
+def _curl(dest: Path, url: str, proxy: str = "") -> subprocess.CompletedProcess:
+    """Un tentativo di download con curl (resume dal parziale in cache)."""
+    cmd = [
+        "curl", "-sSL", "--fail",
+        "--retry", "3", "--retry-delay", "5",
+        "--retry-all-errors",  # anche errori di rete, non solo HTTP
+        "-C", "-",  # resume dalla cache
+        "-H", f"User-Agent: {UA}",
+        "-o", str(dest),
+    ]
+    if proxy:
+        cmd.extend(["-x", proxy])
+    cmd.append(url)
+    return subprocess.run(cmd, capture_output=True, text=True, check=False)
+
+
 def download_zip(url: str, dest: Path) -> None:
-    """Scarica lo ZIP in cache persistente, con resume tra run."""
-    import os
+    """Scarica lo ZIP in cache persistente: **diretto prima, proxy come ripiego**.
+
+    Il proxy (`BLOCKED_SOURCE_PROXY`) e' un ripiego per le fonti che bloccano
+    l'IP del runner, non il percorso di default: forzarlo su tutte le richieste
+    significa che se il proxy non raggiunge la fonte il download fallisce anche
+    quando la connessione diretta funzionerebbe. E' quello che e' successo il
+    2026-11-16 (`curl: (28)` via proxy su opencup.gov.it, irraggiungibile dal
+    proxy, mentre il sito rispondeva).
+    """
     proxy = os.environ.get("BLOCKED_SOURCE_PROXY", "")
 
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -90,20 +114,11 @@ def download_zip(url: str, dest: Path) -> None:
     if dest.exists():
         print(f"cache parziale/invalida: riparto da {dest.stat().st_size / 1e6:.0f} MB")
 
-    cmd = [
-        "curl", "-sSL", "--fail",
-        "--retry", "5", "--retry-delay", "10",
-        "--retry-all-errors",  # anche errori di rete, non solo HTTP
-        "-C", "-",  # resume dalla cache
-        "-H", f"User-Agent: {UA}",
-        "-o", str(dest),
-    ]
-    if proxy:
-        cmd.extend(["-x", proxy])
-    cmd.append(url)
-
-    print(f"download: {dest.name} ...")
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    print(f"download diretto: {dest.name} ...")
+    result = _curl(dest, url)
+    if result.returncode != 0 and proxy:
+        print(f"diretto fallito (exit {result.returncode}), riprovo via proxy ...")
+        result = _curl(dest, url, proxy)
     if result.returncode != 0:
         if dest.exists():
             print(f"parziale in cache: {dest.name} ({dest.stat().st_size / 1e6:.0f} MB)"
